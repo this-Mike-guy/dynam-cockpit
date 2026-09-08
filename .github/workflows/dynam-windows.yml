@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   windows:
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 120
     env:
       CARGO_TERM_COLOR: always
@@ -45,6 +45,13 @@ jobs:
         run: npm run build
       - name: Verify Windows quota stack regression
         run: cargo test -p cockpit-tools --lib --release --features quota-stack-probe codex_current_quota_stack_tests -- --nocapture --test-threads=1
+      - name: Keep test binary for loader diagnosis
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-test-diagnostics-${{ github.sha }}
+          path: target/release/deps/antigravity_cockpit_tools_lib-*.exe
+          retention-days: 3
       - name: Build personal Windows installer
         run: npx tauri build --ci --bundles nsis --config src-tauri/tauri.ci.conf.json
       - name: Collect installer and provenance
