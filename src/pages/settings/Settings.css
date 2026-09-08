@@ -449,7 +449,7 @@ input:checked + .slider:before {
   width: 80px;
   height: 80px;
   border-radius: 22px;
-  background: var(--gradient-primary);
+  background: #101c25;
   color: white;
   display: flex;
   align-items: center;
@@ -458,6 +458,26 @@ input:checked + .slider:before {
   position: relative;
   cursor: pointer;
   user-select: none;
+}
+
+.dynam-fork-notice {
+  max-width: 520px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.dynam-inline-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
 .app-icon-squircle.unlock-fireworks-active {

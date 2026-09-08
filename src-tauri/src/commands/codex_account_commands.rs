@@ -1804,6 +1804,14 @@ pub async fn refresh_codex_subscription_info(
 
 #[tauri::command]
 pub async fn refresh_current_codex_quota(app: AppHandle) -> Result<(), String> {
+    // Tauri constructs and moves this future on the WebView callback thread,
+    // whose Windows stack is only 1 MiB. Keep the command future small: the
+    // quota/switch state machine must be boxed when the runtime first polls us,
+    // rather than embedded in each of Tauri's dispatch/spawn wrapper futures.
+    Box::pin(refresh_current_codex_quota_inner(app)).await
+}
+
+async fn refresh_current_codex_quota_inner(app: AppHandle) -> Result<(), String> {
     let Some(account) = codex_account::get_current_account() else {
         return Err("未找到当前 Codex 账号".to_string());
     };
@@ -1828,6 +1836,212 @@ pub async fn refresh_current_codex_quota(app: AppHandle) -> Result<(), String> {
         Err(result
             .err()
             .unwrap_or_else(|| "刷新 Codex 配额失败".to_string()))
+    }
+}
+
+#[cfg(test)]
+mod codex_current_quota_stack_tests {
+    use super::*;
+
+    #[test]
+    fn current_quota_command_future_stays_small() {
+        fn future_size<F>(_: fn(AppHandle) -> F) -> usize
+        where
+            F: std::future::Future<Output = Result<(), String>> + Send + 'static,
+        {
+            // Inspect the actual command future type without creating an app,
+            // reading credentials, polling the future, or making a request.
+            std::mem::size_of::<F>()
+        }
+
+        let bytes = future_size(refresh_current_codex_quota);
+        let inner_bytes = future_size(refresh_current_codex_quota_inner);
+        println!(
+            "Codex quota future sizes: dispatch={bytes} bytes, preserved implementation={inner_bytes} bytes"
+        );
+        // The failing release embedded an approximately 110 KiB future, which
+        // Tauri copied through multiple wrappers on a 1 MiB callback stack.
+        // Keep generous headroom for those wrappers and the browser call chain.
+        const MAX_COMMAND_FUTURE_BYTES: usize = 16 * 1024;
+        assert!(
+            bytes <= MAX_COMMAND_FUTURE_BYTES,
+            "current Codex quota command future is {bytes} bytes; keep the large \
+             refresh state machine behind the lazy boxed boundary (limit \
+             {MAX_COMMAND_FUTURE_BYTES} bytes)"
+        );
+    }
+
+    // This intentionally crashes one synthetic child process to prove that the
+    // test exercises the Windows failure. It is opt-in and never invokes the
+    // real quota command or reads any accounts, configuration, or credentials.
+    #[cfg(all(windows, feature = "quota-stack-probe"))]
+    mod ipc_probe {
+        use super::*;
+        use std::process::{Command, Output, Stdio};
+
+        const STACK_BYTES: usize = 1024 * 1024;
+        const SYNTHETIC_STATE_BYTES: usize = 256 * 1024;
+        const CHILD_TEST: &str =
+            "commands::codex::codex_current_quota_stack_tests::ipc_probe::quota_stack_probe_child";
+
+        async fn synthetic_large_refresh(seed: u8) -> u16 {
+            let mut state = std::hint::black_box([0u8; SYNTHETIC_STATE_BYTES]);
+            state[0] = seed;
+            // Keep the whole state machine alive across suspension and then
+            // read it, preventing an optimized release build from eliding it.
+            tokio::task::yield_now().await;
+            std::hint::black_box(&mut state);
+            state[SYNTHETIC_STATE_BYTES - 1] = state[0].wrapping_add(1);
+            ((state[0] as u16) << 8) | state[SYNTHETIC_STATE_BYTES - 1] as u16
+        }
+
+        #[tauri::command]
+        async fn unboxed_quota_stack_probe(seed: u8) -> u16 {
+            synthetic_large_refresh(seed).await
+        }
+
+        #[tauri::command]
+        async fn boxed_quota_stack_probe(seed: u8) -> u16 {
+            // Same lazy boxing boundary as refresh_current_codex_quota.
+            Box::pin(synthetic_large_refresh(seed)).await
+        }
+
+        fn invoke_probe(app: tauri::App<tauri::test::MockRuntime>, mode: &str) {
+            let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
+                .build()
+                .expect("synthetic mock webview");
+            let response = tauri::test::get_ipc_response(
+                &webview,
+                tauri::webview::InvokeRequest {
+                    cmd: format!("{mode}_quota_stack_probe"),
+                    callback: tauri::ipc::CallbackFn(0),
+                    error: tauri::ipc::CallbackFn(1),
+                    url: "http://tauri.localhost".parse().expect("local test URL"),
+                    body: tauri::ipc::InvokeBody::Json(serde_json::json!({ "seed": 41 })),
+                    headers: Default::default(),
+                    invoke_key: tauri::test::INVOKE_KEY.to_string(),
+                },
+            )
+            .expect("synthetic IPC response");
+            assert_eq!(response.deserialize::<u16>().expect("probe output"), 0x292a);
+            println!(
+                "{mode} IPC completed with {SYNTHETIC_STATE_BYTES}-byte synthetic state; callback and runtime stacks each {STACK_BYTES} bytes"
+            );
+        }
+
+        // Separate generated dispatchers prevent the unboxed control's stack
+        // frame from inflating the boxed test through another match branch.
+        #[inline(never)]
+        fn dispatch_unboxed_probe() {
+            let app = tauri::test::mock_builder()
+                .invoke_handler(tauri::generate_handler![unboxed_quota_stack_probe])
+                .build(tauri::test::mock_context(tauri::test::noop_assets()))
+                .expect("synthetic unboxed mock app");
+            invoke_probe(app, "unboxed");
+        }
+
+        #[inline(never)]
+        fn dispatch_boxed_probe() {
+            let app = tauri::test::mock_builder()
+                .invoke_handler(tauri::generate_handler![boxed_quota_stack_probe])
+                .build(tauri::test::mock_context(tauri::test::noop_assets()))
+                .expect("synthetic boxed mock app");
+            invoke_probe(app, "boxed");
+        }
+
+        fn run_child(mode: &str) -> Output {
+            let mut child = Command::new(std::env::current_exe().expect("test executable"))
+                .args([
+                    "--exact",
+                    CHILD_TEST,
+                    "--ignored",
+                    "--nocapture",
+                    "--test-threads=1",
+                ])
+                .env("DYNAM_QUOTA_STACK_PROBE_MODE", mode)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .expect("start isolated synthetic IPC probe");
+            let deadline = std::time::Instant::now() + Duration::from_secs(90);
+            loop {
+                if child.try_wait().expect("read probe status").is_some() {
+                    return child.wait_with_output().expect("collect probe output");
+                }
+                if std::time::Instant::now() >= deadline {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    panic!("synthetic {mode} IPC probe timed out");
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
+        }
+
+        #[test]
+        fn quota_stack_probe_baseline_overflows_but_boxed_dispatch_completes() {
+            let baseline = run_child("unboxed");
+            let baseline_stderr = String::from_utf8_lossy(&baseline.stderr);
+            let stack_overflow = baseline.status.code().map(|code| code as u32)
+                == Some(0xc00000fd)
+                || baseline_stderr.contains("has overflowed its stack");
+            assert!(
+                !baseline.status.success() && stack_overflow,
+                "unboxed control must reproduce stack overflow, got {:?}\n{}\n{}",
+                baseline.status,
+                String::from_utf8_lossy(&baseline.stdout),
+                baseline_stderr
+            );
+            println!("Unboxed IPC control reproduced stack overflow: {:?}", baseline.status);
+
+            let fixed = run_child("boxed");
+            assert!(
+                fixed.status.success(),
+                "boxed IPC must complete on 1 MiB callback and runtime stacks: {:?}\n{}\n{}",
+                fixed.status,
+                String::from_utf8_lossy(&fixed.stdout),
+                String::from_utf8_lossy(&fixed.stderr)
+            );
+            println!("{}", String::from_utf8_lossy(&fixed.stdout));
+        }
+
+        #[test]
+        #[ignore = "isolated subprocess entry; run the parent quota stack probe"]
+        fn quota_stack_probe_child() {
+            // Suppress an interactive Windows crash dialog in the deliberate
+            // unboxed control. This changes only this synthetic child process.
+            #[link(name = "kernel32")]
+            extern "system" {
+                fn SetErrorMode(mode: u32) -> u32;
+            }
+            unsafe {
+                SetErrorMode(0x0001 | 0x0002); // FAILCRITICALERRORS | NOGPFAULTERRORBOX
+            }
+
+            let mode = std::env::var("DYNAM_QUOTA_STACK_PROBE_MODE")
+                .expect("probe child must be started by its parent test");
+            assert!(mode == "boxed" || mode == "unboxed");
+            let runtime = tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(1)
+                .thread_stack_size(STACK_BYTES)
+                .enable_all()
+                .build()
+                .expect("1 MiB stack probe runtime");
+            tauri::async_runtime::set(runtime.handle().clone());
+
+            std::thread::Builder::new()
+                .name("synthetic-webview-callback".to_string())
+                .stack_size(STACK_BYTES)
+                .spawn(move || {
+                    if mode == "boxed" {
+                        dispatch_boxed_probe();
+                    } else {
+                        dispatch_unboxed_probe();
+                    }
+                })
+                .expect("start synthetic callback thread")
+                .join()
+                .expect("synthetic callback completed");
+        }
     }
 }
 

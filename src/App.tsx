@@ -51,6 +51,7 @@ import { useTopRightAdStore } from './stores/useTopRightAdStore';
 import { useSponsorStore } from './stores/useSponsorStore';
 import { useRemoteConfigStore } from './stores/useRemoteConfigStore';
 import type { UpdateCheckResult, UpdateInfo } from './components/UpdateNotification';
+import { UPSTREAM_UPDATES_ENABLED } from './branding';
 import type { RemoteUpdatePromptMode } from './types/remoteConfig';
 import type { Update as UpdaterUpdate } from '@tauri-apps/plugin-updater';
 import {
@@ -1499,6 +1500,8 @@ function MainApp() {
   }, [updateRuntimeInfo]);
 
   const runUpdaterCheck = useCallback(async () => {
+    // A signed upstream release would replace this fork's crash fix and identity.
+    if (!UPSTREAM_UPDATES_ENABLED) return null;
     const { check } = await import('@tauri-apps/plugin-updater');
     const target = getUpdaterCheckTarget();
     return target ? check({ target }) : check();
@@ -2282,7 +2285,7 @@ function MainApp() {
 
   // Check for updates on startup
   useEffect(() => {
-    if (!updateRuntimeInfoLoaded) {
+    if (!UPSTREAM_UPDATES_ENABLED || !updateRuntimeInfoLoaded) {
       return;
     }
 

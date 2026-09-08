@@ -2,6 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import enResources from '../locales/en.json';
 import zhCnResources from '../locales/zh-CN.json';
+import { APP_DISPLAY_NAME } from '../branding';
 
 type LocaleModule = { default: Record<string, unknown> };
 
@@ -55,6 +56,13 @@ const localeLoaders: Record<string, () => Promise<LocaleModule>> = {
 };
 
 const loadedLanguages = new Set<string>();
+
+function applyBrandResources(language: string): void {
+  i18n.addResourceBundle(language, 'translation', {
+    common: { appName: APP_DISPLAY_NAME },
+    settings: { about: { appName: APP_DISPLAY_NAME } },
+  }, true, true);
+}
 let initPromise: Promise<void> | null = null;
 let i18nBootstrapped = false;
 
@@ -94,6 +102,7 @@ async function ensureLanguageResources(lang: string): Promise<string> {
   }
   const module = await loader();
   i18n.addResourceBundle(resolved, 'translation', module.default, true, true);
+  applyBrandResources(resolved);
   loadedLanguages.add(resolved);
   return resolved;
 }
@@ -137,6 +146,8 @@ function bootstrapI18n(savedLanguage: string): string {
       },
     });
 
+  applyBrandResources('en');
+  applyBrandResources('zh-cn');
   loadedLanguages.add('en');
   loadedLanguages.add('zh-cn');
   i18nBootstrapped = true;

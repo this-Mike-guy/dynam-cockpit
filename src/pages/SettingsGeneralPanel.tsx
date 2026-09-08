@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { UPSTREAM_UPDATES_ENABLED } from '../branding';
 import { normalizeLanguage } from '../i18n';
 import * as accountService from '../services/accountService';
 import { showFloatingCardWindow } from '../services/floatingCardService';
@@ -584,13 +585,13 @@ export function SettingsGeneralPanel(props: SettingsPageViewProps) {
               <div className="settings-row">
                 <div className="row-label">
                   <div className="row-title">{t('settings.general.autoUpdate')}</div>
-                  <div className="row-desc">{t('settings.general.autoUpdateDesc')}</div>
+                  <div className="row-desc">{UPSTREAM_UPDATES_ENABLED ? t('settings.general.autoUpdateDesc') : 'DYNAM Cockpit updates are installed manually.'}</div>
                 </div>
                 <div className="row-control">
                   <select
                     className="settings-select"
-                    value={autoInstall ? 'true' : 'false'}
-                    disabled={!autoInstallLoaded}
+                    value={UPSTREAM_UPDATES_ENABLED && autoInstall ? 'true' : 'false'}
+                    disabled={!UPSTREAM_UPDATES_ENABLED || !autoInstallLoaded}
                     onChange={(e) => {
                       autoInstallTouchedRef.current = true;
                       setAutoInstall(e.target.value === 'true');
@@ -610,8 +611,8 @@ export function SettingsGeneralPanel(props: SettingsPageViewProps) {
                 <div className="row-control">
                   <select
                     className="settings-select"
-                    value={updateRemindersEnabled ? 'true' : 'false'}
-                    disabled={!updateRemindersLoaded}
+                    value={UPSTREAM_UPDATES_ENABLED && updateRemindersEnabled ? 'true' : 'false'}
+                    disabled={!UPSTREAM_UPDATES_ENABLED || !updateRemindersLoaded}
                     onChange={(e) => {
                       updateRemindersTouchedRef.current = true;
                       setUpdateRemindersEnabled(e.target.value === 'true');

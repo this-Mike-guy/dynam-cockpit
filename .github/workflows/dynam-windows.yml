@@ -1,0 +1,74 @@
+name: DYNAM Windows build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'codex/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dynam-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      CARGO_TERM_COLOR: always
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - name: Enable long Windows source paths
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: sidecars/cockpit-cliproxy/go.mod
+          cache-dependency-path: sidecars/cockpit-cliproxy/go.sum
+      - uses: swatinem/rust-cache@v2
+        with:
+          key: dynam-windows-release
+          cache-on-failure: true
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Build and typecheck frontend
+        run: npm run build
+      - name: Verify Windows quota stack regression
+        run: cargo test -p cockpit-tools --lib --release --features quota-stack-probe codex_current_quota_stack_tests -- --nocapture --test-threads=1
+      - name: Build personal Windows installer
+        run: npx tauri build --ci --bundles nsis --config src-tauri/tauri.ci.conf.json
+      - name: Collect installer and provenance
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          Get-ChildItem target/release/bundle/nsis -Filter '*.exe' | Copy-Item -Destination artifacts
+          $files = @(Get-ChildItem artifacts -File | ForEach-Object {
+            @{ name = $_.Name; sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
+          })
+          if ($files.Count -eq 0) { throw 'No Windows installer produced' }
+          @{
+            project = 'DYNAM Cockpit personal fork'
+            repository = '${{ github.repository }}'
+            commit = '${{ github.sha }}'
+            run = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            upstream = 'jlcodes99/cockpit-tools v1.3.43 (4089320ac78bbd7ebaabc5bb878507b292b52c01)'
+            compiler = (rustc --version)
+            files = $files
+          } | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 artifacts/provenance.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DYNAM-Cockpit-Windows-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14

@@ -3,15 +3,10 @@ use crate::modules::logger;
 use crate::modules::update_checker::{self, ReleaseHistoryItem, UpdateSettings, VersionJumpInfo};
 use std::time::Instant;
 
-/// Check if we should check for updates (based on interval settings)
+/// This personal fork is updated manually, never with an upstream executable.
 #[tauri::command]
 pub fn should_check_updates() -> Result<bool, String> {
-    // #1104: respect external-network kill switch for auto update probes.
-    if !crate::modules::config::get_user_config().external_network_enabled {
-        return Ok(false);
-    }
-    let settings = update_checker::load_update_settings()?;
-    Ok(update_checker::should_check_for_updates(&settings))
+    Ok(false)
 }
 
 /// Update the last check time
@@ -157,8 +152,8 @@ pub fn get_update_runtime_info() -> Result<UpdateRuntimeInfo, String> {
 
 #[tauri::command]
 pub async fn install_linux_update(
-    app: tauri::AppHandle,
-    expected_version: Option<String>,
+    _app: tauri::AppHandle,
+    _expected_version: Option<String>,
 ) -> Result<(), String> {
-    linux_updater::install_linux_update(app, expected_version).await
+    Err("DYNAM Cockpit updates are installed manually.".to_string())
 }

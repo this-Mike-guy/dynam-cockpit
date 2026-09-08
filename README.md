@@ -1,3 +1,7 @@
+# DYNAM Cockpit — personal edition
+
+Personal, noncommercial fork of Cockpit Tools v1.3.43 by **jlcodes99 and contributors**. This edition adds a Windows quota-refresh crash fix and DYNAM branding, with upstream self-updates disabled. See [fork notes, attribution, and license](DYNAM-FORK.md). Original upstream documentation follows.
+
 # Cockpit Tools
 
 [English](README.en.md) · [Portuguese (BR)](README.pt-br.md) · 简体中文

@@ -273,7 +273,7 @@ pub fn run() {
             }
         }))
         .setup(|app| {
-            info!("Cockpit Tools 启动...");
+            info!("DYNAM Cockpit 启动...");
             let current_exe = std::env::current_exe()
                 .map(|path| path.display().to_string())
                 .unwrap_or_else(|err| format!("unknown: {}", err));
@@ -316,17 +316,15 @@ pub fn run() {
                 }
             });
 
-            // 初始化 Updater 插件
+            // Personal fork: upstream updater is deliberately not registered.
             #[cfg(desktop)]
             {
-                app.handle()
-                    .plugin(tauri_plugin_updater::Builder::new().build())?;
                 app.handle().plugin(tauri_plugin_process::init())?;
                 app.handle().plugin(tauri_plugin_autostart::init(
                     tauri_plugin_autostart::MacosLauncher::LaunchAgent,
                     None::<Vec<&'static str>>,
                 ))?;
-                info!("[Updater] Tauri Updater + Process 插件已初始化");
+                info!("[DYNAM] Process and autostart initialized; upstream updater disabled");
             }
 
             // 启动时同步设置合并（移至后台线程，不阻塞窗口显示）

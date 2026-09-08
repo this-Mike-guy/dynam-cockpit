@@ -2,7 +2,9 @@ import { UnlockFireworksOverlay } from '../components/UnlockFireworksOverlay';
 import { SettingsAccountTransferSection } from '../components/SettingsAccountTransferSection';
 import { SettingsWebdavSyncSection } from '../components/SettingsWebdavSyncSection';
 import './settings/Settings.css';
-import { Github, User, Rocket, Save, AlertCircle, RefreshCw, Heart, MessageSquare, FileText, Download, X } from 'lucide-react';
+import { Github, User, Save, AlertCircle, RefreshCw, Heart, MessageSquare, FileText, Download, X } from 'lucide-react';
+import { DynamMark } from '../components/DynamMark';
+import { APP_DISPLAY_NAME, FORK_DESCRIPTION, UPSTREAM_UPDATES_ENABLED } from '../branding';
 import type { PlatformId } from '../types/platform';
 import type { useSettingsPageController } from "./SettingsPage";
 import { SettingsGeneralPanel } from "./SettingsGeneralPanel";
@@ -401,13 +403,13 @@ export function SettingsPageView(props: SettingsPageViewProps) {
                 onClick={handleAboutAvatarTap}
                 onMouseDown={(event) => event.preventDefault()}
               >
-                <Rocket size={40} />
+                <DynamMark size={72} />
               </div>
               <div className="app-info">
-                <h2>{t('settings.about.appName')}</h2>
+                <h2>{APP_DISPLAY_NAME}</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div className="version-tag">{appVersion}</div>
-                  <button 
+                  {UPSTREAM_UPDATES_ENABLED && <button
                     className="btn btn-sm btn-ghost"
                     onClick={handleCheckUpdate}
                     disabled={updateChecking}
@@ -423,7 +425,7 @@ export function SettingsPageView(props: SettingsPageViewProps) {
                       <RefreshCw size={14} className={updateChecking ? 'spin' : undefined} />
                       {updateChecking ? t('settings.about.checking') : t('settings.about.checkUpdate')}
                     </>
-                  </button>
+                  </button>}
                   <button
                     className="btn btn-sm btn-ghost"
                     onClick={handleOpenReleaseHistory}
@@ -450,11 +452,24 @@ export function SettingsPageView(props: SettingsPageViewProps) {
                 )}
               </div>
               <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                {t('settings.about.slogan')}
+                {FORK_DESCRIPTION}
+              </p>
+              <p className="dynam-fork-notice">
+                Original software by jlcodes99 and Cockpit Tools contributors.
+                {' '}Personal modifications by DYNAM. Licensed under{' '}
+                <button className="dynam-inline-link" onClick={() => openLink('https://creativecommons.org/licenses/by-nc-sa/4.0/')}>
+                  CC BY-NC-SA 4.0
+                </button>.
+                {' '}Updates are installed manually for this edition.
               </p>
             </div>
 
             <div className="credits-list">
+              <button className="credit-item" onClick={() => openLink('https://github.com/this-Mike-guy/dynam-cockpit')}>
+                <div className="credit-icon"><DynamMark size={32} /></div>
+                <h3>DYNAM Cockpit</h3>
+                <p>Personal fork source</p>
+              </button>
               <button className="credit-item" onClick={() => openLink('https://github.com/jlcodes99')}>
                 <div className="credit-icon"><User size={24} /></div>
                 <h3>{t('settings.about.author')}</h3>
