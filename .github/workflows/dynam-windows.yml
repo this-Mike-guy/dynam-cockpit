@@ -44,7 +44,30 @@ jobs:
       - name: Build and typecheck frontend
         run: npm run build
       - name: Verify Windows quota stack regression
-        run: cargo test -p cockpit-tools --lib --release --features quota-stack-probe codex_current_quota_stack_tests -- --nocapture --test-threads=1
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cargo test -p cockpit-tools --lib --release --features quota-stack-probe --no-run --message-format=json > test-artifacts.jsonl
+          if ($LASTEXITCODE -ne 0) { throw 'Native test compilation failed' }
+          $testBinaries = @(Get-Content test-artifacts.jsonl | ForEach-Object {
+            $event = $_ | ConvertFrom-Json
+            if ($event.reason -eq 'compiler-artifact' -and $event.profile.test -and $event.target.name -eq 'antigravity_cockpit_tools_lib' -and $event.executable) {
+              $event.executable
+            }
+          })
+          if ($testBinaries.Count -ne 1) { throw 'Expected one library test executable' }
+          $testBinary = $testBinaries[0]
+          # Cargo library tests do not receive Tauri's application manifest.
+          # rfd imports TaskDialogIndirect, which needs Common Controls v6.
+          $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
+          $manifestTool = Get-ChildItem $sdkBin -Filter mt.exe -Recurse |
+            Where-Object { $_.Directory.Name -eq 'x64' } |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          if (!$manifestTool) { throw 'Windows SDK manifest tool missing' }
+          & $manifestTool.FullName -nologo -manifest src-tauri/tests/windows-test.manifest "-outputresource:$testBinary;#1"
+          if ($LASTEXITCODE -ne 0) { throw 'Embedding test Common Controls manifest failed' }
+          & $testBinary codex_current_quota_stack_tests --nocapture --test-threads=1
+          exit $LASTEXITCODE
       - name: Keep test binary for loader diagnosis
         if: failure()
         uses: actions/upload-artifact@v4
