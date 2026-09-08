@@ -208,7 +208,8 @@
         "recommendedDescTooltip": "Recommended (most worthwhile first)",
         "toggleDirection": "Toggle sort direction",
         "credits": "By remaining credits",
-        "planEnd": "By cycle end time"
+        "planEnd": "By cycle end time",
+        "name": "By name"
       },
       "sortLabel": "Sort",
       "token": {
@@ -277,7 +278,8 @@
       },
       "clear": "Clear",
       "loginSuccess": "Login successful",
-      "switchAccount": "Switch Account"
+      "switchAccount": "Switch Account",
+      "close": "Close"
     },
     "appName": "Cockpit Tools",
     "collapse": "Collapse",
@@ -286,7 +288,26 @@
     "deleteTagWarning": "Are you sure you want to delete this tag from all accounts?",
     "expand": "Expand",
     "processing": "Processing...",
-    "selectAll": "Select All"
+    "selectAll": "Select All",
+    "added": "Added",
+    "clear": "Clear",
+    "clearAll": "Clear all",
+    "clickToAdd": "Click to add",
+    "clickToRemove": "Click to deselect",
+    "done": "Done",
+    "edit": "Edit",
+    "filter": "Filter...",
+    "no": "No",
+    "noData": "No data",
+    "remove": "Remove",
+    "rename": "Rename",
+    "retry": "Retry",
+    "saved": "Saved",
+    "search": "Search...",
+    "status": "Status",
+    "syncing": "Syncing...",
+    "unknown": "Unknown",
+    "yes": "Yes"
   },
   "floatingCard": {
     "selectPlatform": "Switch platform",
@@ -535,7 +556,8 @@
       "claudeShort": "Claude"
     },
     "prefill": {
-      "claudeDesktopReady": "APIKEY.FUN settings are filled in. Confirm to add them to Claude."
+      "claudeDesktopReady": "APIKEY.FUN settings are filled in. Confirm to add them to Claude.",
+      "codexReady": "APIKEY.FUN settings are ready. Review them before adding the account to Codex."
     }
   },
   "platformLayout": {
@@ -626,7 +648,8 @@
       "showFloatingCardDisabled": "Bind an account before showing the floating card",
       "showFloatingCardMissing": "The bound account no longer exists, so the floating card cannot be shown",
       "syncThreads": "Sync Threads",
-      "syncThreadsDisabled": "At least two instances are required to sync threads"
+      "syncThreadsDisabled": "At least two instances are required to sync threads",
+      "duplicate": "Duplicate instance"
     },
     "bulkConfirm": {
       "startAll": "Start all stopped instances?",
@@ -657,7 +680,8 @@
       "email": "Account",
       "quota": "Quota",
       "actions": "Actions",
-      "speed": "Speed"
+      "speed": "Speed",
+      "account": "Account"
     },
     "empty": {
       "title": "No instances yet",
@@ -731,7 +755,8 @@
         "validation": {
           "contextWindowInvalid": "Context window must be an integer greater than 0.",
           "autoCompactInvalid": "Auto-compact limit must be an integer greater than 0."
-        }
+        },
+        "saveFailed": "Failed to save Codex settings: {{error}}"
       },
       "modelRouting": {
         "title": "Third-party API routing",
@@ -751,7 +776,56 @@
         "saveForLater": "Save for later",
         "savedForNextLaunch": "Saved. It will take effect the next time you start Codex through Cockpit; the current session remains unchanged.",
         "restartRollbackFailed": "The new route failed to start and the original configuration could not be restarted: ",
-        "restartRolledBack": "The new route failed to start. The original configuration was restored and Codex restarted: {{error}}"
+        "restartRolledBack": "The new route failed to start. The original configuration was restored and Codex restarted: {{error}}",
+        "addModels": "Add models",
+        "addRoute": "Add API channel",
+        "catalogUnavailable": "Cockpit cannot manage this instance's model catalog, so model routing cannot be enabled.",
+        "channelsSummary": "Third-party API channels",
+        "clickToDeselect": "Selected (click to deselect)",
+        "clickToDisable": "Click to disable third-party routing",
+        "clickToEdit": "Click to configure this channel",
+        "clickToEnable": "Click to enable third-party routing",
+        "clickToSelect": "Not selected (click to select)",
+        "createHint": "Duplicate the default instance to reuse its Codex setup. A blank instance must be started once before configuring routing.",
+        "defaultInstanceName": "Mixed routing",
+        "deleteRoute": "Delete channel",
+        "desktopOnly": "Mixed model routing is available only for desktop app instances.",
+        "disabledSource": "Route disabled",
+        "duplicateNamespace": "Model routing prefixes must be unique.",
+        "enableAction": "Configure API channels",
+        "enabledRouteRequired": "Enable at least one API model route.",
+        "fetchCredentialsRequired": "This API account is missing a key or Base URL, so its model list cannot be fetched.",
+        "fetchEmpty": "The provider returned no models. Add them manually below.",
+        "fetchFailed": "Failed to fetch model list: {{error}}",
+        "fetchModels": "Fetch list",
+        "invalidNamespace": "Use 2-32 lowercase letters, digits, underscores, or hyphens for the prefix. Reserved names are not allowed.",
+        "loadedModels": "Loaded models",
+        "manageAction": "Manage API channels",
+        "manageChannels": "Configure channels",
+        "manualPlaceholder": "gpt-5.5, grok-4.6",
+        "missingSource": "Route missing",
+        "modalDescription": "Configure third-party API accounts and model prefixes. Models without a prefix continue to use the current subscription.",
+        "modalTitle": "Third-party API routing",
+        "modelUnavailable": "Model no longer in the API catalog",
+        "modelsCount": "{{count}} routed models",
+        "namespacePlaceholder": "Prefix (e.g. cpa)",
+        "noCatalog": "No provider models loaded. Fetch the list or add models manually.",
+        "noChannels": "No third-party API channels added",
+        "noProviderAccounts": "No supported API accounts found. Add a model provider under API Accounts first.",
+        "oauthRequired": "Mixed model routing requires a linked OAuth subscription account signed in directly.",
+        "provider": "Select API account",
+        "providerRequired": "Select an API account for each model route.",
+        "routeRequired": "Add at least one API model route.",
+        "routesCount": "{{count}} channels",
+        "statusBadge": "Mixed routing",
+        "subscriptionSource": "Subscription",
+        "unavailableSource": "Account unavailable",
+        "unnamedAccount": "No account selected",
+        "providerModels": "{{name}} · {{count}} models",
+        "providerModelsNotLoaded": "{{name}} · List not fetched",
+        "enabledTotal": "Enabled / total",
+        "selectAllModels": "Select every model in this channel",
+        "clearSelectedModels": "Clear selected models"
       },
       "nameRequired": "Please enter an instance name",
       "pathRequired": "Please select an instance directory",
@@ -759,7 +833,8 @@
       "appSpeed": "Speed",
       "appSpeedDesc": "Writes the selected speed before starting official Codex",
       "autoSyncThreads": "Auto-sync sessions",
-      "autoSyncThreadsDesc": "Off keeps multi-instance sessions isolated. When enabled, starting or closing an instance automatically merges local session records only after all Codex instances are stopped."
+      "autoSyncThreadsDesc": "Off keeps multi-instance sessions isolated. When enabled, starting or closing an instance automatically merges local session records only after all Codex instances are stopped.",
+      "copyName": "{{name}} copy"
     },
     "quota": {
       "unbound": "No bound account",
@@ -1194,7 +1269,18 @@
       "menuBarAccountPrefixDesc": "Normal accounts only: when off, hide email prefix. Codex API Service / API Key still show the API label",
       "menuBarQuotaConfirmEnable": "Enable",
       "codexHideRelayQuota": "Hide relay quota",
-      "codexHideRelayQuotaDesc": "When on, Codex account overview hides mid-relay / New API style balance panels to reduce clutter."
+      "codexHideRelayQuotaDesc": "When on, Codex account overview hides mid-relay / New API style balance panels to reduce clutter.",
+      "account": "Accounts",
+      "accountLevelRefreshDesc": "Set refresh intervals for individual accounts to override the platform default.",
+      "accountLevelRefreshDisabled": "Disabled",
+      "accountLevelRefreshInherit": "Use platform setting",
+      "accountLevelRefreshSummary": "Expand settings",
+      "accountLevelRefreshSummaryActive": "{{count}} accounts configured",
+      "accountLevelRefreshTitle": "Per-account refresh settings",
+      "codexAutoRestoreTakeoverOnLaunch": "Restore Codex proxy configuration on startup",
+      "codexAutoRestoreTakeoverOnLaunchDesc": "Restore the previous model catalog and proxy configuration when Cockpit starts, including its 1M context setting, without switching manually.",
+      "errorReporting": "Diagnostic reporting",
+      "errorReportingDesc": "Enabled by default for troubleshooting startup and interface issues. Disable it to stop diagnostic events. Reports are redacted to exclude account passwords, tokens, 2FA secrets, phone numbers, and similar sensitive information."
     },
     "tabs": {
       "general": "General",
@@ -1514,7 +1600,8 @@
       "windowsApp": "Microsoft Store",
       "defaultOnly": "Default desktop only; choose the real Claude.exe for multi-instance profiles.",
       "claudeScanEmpty": "No Claude Desktop target was found. Choose Claude.exe manually or adjust the scan roots.",
-      "claudeTargetPlaceholder": "Claude.exe path or shell:AppsFolder\\..."
+      "claudeTargetPlaceholder": "Claude.exe path or shell:AppsFolder\\...",
+      "scanEmptyGeneric": "No running {{app}} was found. Start the app and try again, or select its path manually."
     },
     "modal": {
       "desc": "The app path for {{app}} was not found. Please configure it now to continue."
@@ -2294,7 +2381,10 @@
         "contextDefaultShort": "Default",
         "contextCustomShort": "Custom",
         "contextWindow": "Context window",
-        "autoCompactLimit": "Compact limit"
+        "autoCompactLimit": "Compact limit",
+        "addAll": "+ All ({{count}})",
+        "addCustomBlank": "Create a blank custom model",
+        "source": "Source"
       },
       "unavailable": {
         "cacheMissing": "models_cache.json was not found. Start Codex once to generate the model cache; if it remains missing, this Codex version does not support this cache format.",
@@ -2374,15 +2464,17 @@
       "modelConfigDialogDescription": "Configure visible models, reasoning levels, context windows, and compact limits for each model.",
       "applyModelConfig": "Apply settings",
       "defaultModel": "Default model",
-      "repairCompleted": "Session visibility repair completed"
-      ,"forceRefreshTitle": "Force-refresh Token",
+      "repairCompleted": "Session visibility repair completed",
+      "forceRefreshTitle": "Force-refresh Token",
       "forceRefreshReady": "OAuth tokens can be refreshed manually",
       "forceRefreshDescription": "Use refresh_token to obtain new access_token and id_token values. This may rotate the current refresh token.",
       "forceRefreshUnavailable": "Unavailable for this account type",
       "forceRefreshAction": "Refresh now",
       "forceRefreshRunning": "Refreshing Token…",
       "forceRefreshSuccess": "Token refreshed successfully",
-      "forceRefreshRetry": "Retry check"
+      "forceRefreshRetry": "Retry check",
+      "modelRoutingDisabled": "Disabled",
+      "modelRoutingEnabled": "Enabled"
     },
     "switch": "Switch",
     "switched": "Switched to {{email}}",
@@ -2498,7 +2590,8 @@
       "oauth": "OAuth Authorization",
       "token": "API Key",
       "local": "Local Import",
-      "accessToken": "Access token"
+      "accessToken": "Access token",
+      "targetGroup": "Add to group: {{group}}"
     },
     "oauth": {
       "desc": "Click the button below and complete OpenAI authorization in your browser",
@@ -2526,7 +2619,8 @@
       "formatRequired": "Supports Agent Identity auth.json, session JSON, full tokens, Sub2API export JSON, accessToken only, at-… / personal_access_token, or refresh_token only. Agent Identity signing credentials are stored and each upstream API Service request is signed dynamically.",
       "formatSingleLabel": "Full tokens",
       "formatRefreshOnlyLabel": "session / accessToken / at- / refresh_token examples",
-      "formatBatchLabel": "Batch example"
+      "formatBatchLabel": "Batch example",
+      "importPartial": "Import complete: {{success}} succeeded, {{failed}} failed. {{errors}}"
     },
     "agentIdentityRegistration": {
       "apiOnlyActionError": "Agent Identity accounts are available through API Service only and cannot be switched to or launched directly.",
@@ -2775,7 +2869,8 @@
         "remember": "I understand and do not show this again",
         "acknowledge": "I Understand",
         "continueStart": "Continue",
-        "continueSwitch": "Continue Switch"
+        "continueSwitch": "Continue Switch",
+        "desc": "Codex API Service forwards requests through a proxy. Continuing means you understand this setup and accept the associated risks."
       },
       "statsRange": {
         "label": "Stats Range",
@@ -2975,7 +3070,8 @@
       "testChatSend": "Send",
       "testChatInputRequired": "Enter a test message",
       "testChatModelRequired": "Select a model ID",
-      "testChatEmptyResponse": "Empty response"
+      "testChatEmptyResponse": "Empty response",
+      "apiKeyRotate": "Rotate Key"
     },
     "api": {
       "baseUrl": "Base URL",
@@ -2996,7 +3092,12 @@
         "fetchCredentialsRequired": "Enter the API Key and Base URL first.",
         "fetchEmpty": "The provider returned no models. The current list was kept.",
         "fetchFailed": "Failed to fetch provider models: {{error}}",
-        "syncRequiresModels": "Fetch or enter at least one model before syncing to Codex."
+        "syncRequiresModels": "Fetch or enter at least one model before syncing to Codex.",
+        "contextWindow": "Context window",
+        "contextWindowHint": "Optional. Official and DeepSeek models keep the provider default. For third-party models, leave blank to use the context settings or 128000. Restart Codex after changing this.",
+        "contextWindowInvalid": "The context window must be a positive integer.",
+        "contextWindowPlaceholder": "Leave blank for default",
+        "restartHint": "Model catalog updated. Restart Codex if it is running to apply the changes."
       },
       "actions": {
         "addAndSwitch": "Add and Switch"
@@ -3173,7 +3274,8 @@
         "visionCapability": "Image Input",
         "visionModels": "Vision Models",
         "visionRoutingModel": "Image Route Model",
-        "supportsWebsockets": "WebSocket Transport"
+        "supportsWebsockets": "WebSocket Transport",
+        "apiKey": "API Key"
       },
       "validation": {
         "nameRequired": "Provider name is required.",
@@ -3181,7 +3283,9 @@
         "baseUrlExists": "This Base URL already exists.",
         "providerNotFound": "Provider not found.",
         "apiKeyRequiredOnCreate": "At least one API Key is required when creating a provider.",
-        "apiKeyRequiredWhenEmpty": "This provider has no API key yet. Please add one first."
+        "apiKeyRequiredWhenEmpty": "This provider has no API key yet. Please add one first.",
+        "apiKeyExists": "This API key already exists for this provider.",
+        "apiKeyRequired": "API key is required."
       },
       "saveSuccess": "Model provider saved.",
       "deleteBlocked": "This provider is linked to {{count}} account(s) and cannot be deleted.",
@@ -3397,7 +3501,21 @@
           "expiresAt": "Expires At",
           "totalGranted": "Granted",
           "totalAvailable": "Available",
-          "modelLimitsEnabled": "Model Limits"
+          "modelLimitsEnabled": "Model Limits",
+          "currency": "Currency",
+          "grantedBalance": "Credit balance",
+          "intervalExpiresAt": "Interval Reset",
+          "intervalLimit": "Interval Limit",
+          "intervalRemaining": "Interval Remaining",
+          "intervalRemainingPercent": "Interval Remaining %",
+          "isAvailable": "Balance available",
+          "modelName": "Model",
+          "toppedUpBalance": "Top-up balance",
+          "totalBalance": "Total balance",
+          "weeklyExpiresAt": "Weekly Reset",
+          "weeklyLimit": "Weekly Limit",
+          "weeklyRemaining": "Weekly Remaining",
+          "weeklyRemainingPercent": "Weekly Remaining %"
         },
         "accountBalance": "Account Balance",
         "unlimitedQuota": "Unlimited",
@@ -3426,7 +3544,14 @@
       "renameApiKeyPrompt": "Rename API key",
       "renameApiKeySuccess": "API key renamed",
       "renameApiKeyFailed": "Failed to rename API key: {{error}}",
-      "existingApiKeysSearch": "Search existing API keys…"
+      "existingApiKeysSearch": "Search existing API keys…",
+      "apiKeyCopied": "API key copied",
+      "batchDeleteConfirm": "Delete the {{count}} selected providers?",
+      "batchDeleteSuccess": "Deleted {{count}} providers",
+      "editApiKey": "Edit API Key",
+      "noMatchTitle": "No matching providers",
+      "updateApiKeyFailed": "Failed to update API key: {{error}}",
+      "updateApiKeySuccess": "API key updated"
     },
     "quickSwitch": {
       "action": "Quick Switch Provider",
@@ -4333,7 +4458,8 @@
         "presetDeleted": "Preset deleted",
         "presetNameRequired": "Enter a preset name",
         "deletePresetConfirm": "Delete this custom preset?",
-        "deletePresetTitle": "Delete preset"
+        "deletePresetTitle": "Delete preset",
+        "retryTitle": "Request and account retries"
       },
       "validation": {
         "numberRange": "Enter a number from {{min}} to {{max}}"
@@ -4365,7 +4491,8 @@
         "reasoningEffortValue": "Think {{effort}}",
         "serviceTier": "Service tier",
         "serviceTierValue": "Tier {{tier}}"
-      }
+      },
+      "customRoutingSelected": "{{count}} selected"
     },
     "apiKey": {
       "renameSuccess": "Renamed",
@@ -4553,6 +4680,11 @@
     "accounts": {
       "showRelayQuota": "Show relay quota",
       "hideRelayQuota": "Hide relay quota"
+    },
+    "cli": {
+      "launchSuccess": "Codex CLI started",
+      "quickLaunch": "Quick launch CLI",
+      "selectWorkingDir": "Select the Codex CLI working directory"
     }
   },
   "codebuddy": {
@@ -4954,6 +5086,13 @@
     "traeSoloCn": {
       "title": "TRAE SOLO CN Settings",
       "appPath": "TRAE SOLO CN Path"
+    },
+    "appPath": {
+      "scanEmpty": "No running app was found. Start it and try again, or select its path manually."
+    },
+    "codexWindow": {
+      "orDivider": "OR (either condition triggers)",
+      "primaryWindowMeaning": "primary_window usually refers to the 5-hour allowance. For free accounts it may refer to the weekly allowance; the meaning varies by plan."
     }
   },
   "quotaAlert": {

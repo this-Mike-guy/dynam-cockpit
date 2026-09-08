@@ -752,6 +752,13 @@ pub async fn reactivate_if_imported_matches_current(
         return None;
     }
 
+    if crate::modules::codex_restart_guard::desktop_is_running()
+        .await
+        .unwrap_or(true)
+    {
+        logger::log_info("[Codex Import] Import saved; deferred rewriting the current profile while the desktop is open");
+        return None;
+    }
     match switch_account_managed(&current_id).await {
         Ok(account) => {
             logger::log_info(&format!(

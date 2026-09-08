@@ -10,6 +10,9 @@ Source for this fork: <https://github.com/this-Mike-guy/dynam-cockpit>.
 - DYNAM Cockpit name, navy and mint D mark, desktop identity `com.dynam.cockpit.personal`, and visible upstream attribution in About.
 - Upstream self-updates are disabled in both the interface and the native updater registration. Install reviewed builds manually so an upstream release cannot silently replace the patch.
 - The existing account/configuration storage format and paths remain compatible with Cockpit Tools.
+- Version `1.3.43-dynam.2` recognizes the Windows `OpenAI.Codex` package even when its desktop executable is named `ChatGPT.exe`. ChatGPT Classic and bundled Codex command-line processes are excluded from automatic desktop selection.
+- Desktop launch validation runs before preparing credentials, stopping an instance, or writing its profile. If Codex is open, manual changes require a restart confirmation; this detects the application, not whether its tasks are idle. Automatic switching defers while the desktop is open.
+- English entries cover missing buttons and labels in the Codex and settings flows, including Retry. Other languages and upstream attribution remain available.
 
 ## License and attribution
 

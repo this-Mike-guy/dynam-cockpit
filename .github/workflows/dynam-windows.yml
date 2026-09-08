@@ -43,7 +43,9 @@ jobs:
         run: npm ci
       - name: Build and typecheck frontend
         run: npm run build
-      - name: Verify Windows quota stack regression
+      - name: Verify English Codex interface
+        run: node --test tests/english-codex-translations.test.mjs
+      - name: Verify Windows quota and launcher regressions
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -66,8 +68,18 @@ jobs:
           if (!$manifestTool) { throw 'Windows SDK manifest tool missing' }
           & $manifestTool.FullName -nologo -manifest src-tauri/tests/windows-test.manifest "-outputresource:$testBinary;#1"
           if ($LASTEXITCODE -ne 0) { throw 'Embedding test Common Controls manifest failed' }
-          & $testBinary codex_current_quota_stack_tests --nocapture --test-threads=1
-          exit $LASTEXITCODE
+          $filters = @(
+            'codex_current_quota_stack_tests',
+            'codex_windows_launch_preflight_tests',
+            'codex_path_migration_tests',
+            'codex_windows_app_server_cleanup_tests'
+          )
+          foreach ($filter in $filters) {
+            $listed = @(& $testBinary $filter --list | Select-String ': test$')
+            if ($LASTEXITCODE -ne 0 -or $listed.Count -eq 0) { throw "No tests found for $filter" }
+            & $testBinary $filter --nocapture --test-threads=1
+            if ($LASTEXITCODE -ne 0) { throw "Native regression failed: $filter" }
+          }
       - name: Keep test binary for loader diagnosis
         if: failure()
         uses: actions/upload-artifact@v4

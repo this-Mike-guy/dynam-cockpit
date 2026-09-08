@@ -2123,17 +2123,10 @@ fn compare_windows_store_version(left: &[u32], right: &[u32]) -> std::cmp::Order
     std::cmp::Ordering::Equal
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(any(test, target_os = "windows"))]
 fn parse_codex_store_version_from_dir_name(dir_name: &str) -> Option<Vec<u32>> {
     let lower = dir_name.to_ascii_lowercase();
-    let prefix = [
-        "openai.chatgpt_",
-        "openai.chatgpt-desktop_",
-        "openai.codex_",
-    ]
-    .iter()
-    .find(|prefix| lower.starts_with(**prefix))?;
-    let suffix = dir_name.get(prefix.len()..)?;
+    let suffix = lower.strip_prefix("openai.codex_")?;
     let version_part = suffix.split('_').next()?.trim();
     if version_part.is_empty() {
         return None;
@@ -2151,23 +2144,53 @@ fn parse_codex_store_version_from_dir_name(dir_name: &str) -> Option<Vec<u32>> {
     Some(version)
 }
 
-#[cfg(target_os = "windows")]
-fn codex_store_package_priority(dir_name: &str) -> u8 {
-    let lower = dir_name.to_ascii_lowercase();
-    if lower.starts_with("openai.chatgpt_") || lower.starts_with("openai.chatgpt-desktop_") {
-        2
-    } else if lower.starts_with("openai.codex_") {
-        1
-    } else {
-        0
-    }
+#[cfg(any(test, target_os = "windows"))]
+fn is_codex_windows_store_desktop_executable(path: &Path) -> bool {
+    let normalized = normalized_windows_path_text(path);
+    let Some((_, package_path)) = normalized.rsplit_once("\\windowsapps\\") else {
+        return false;
+    };
+    let Some((package_name, relative_executable)) = package_path.split_once('\\') else {
+        return false;
+    };
+    parse_codex_store_version_from_dir_name(package_name).is_some()
+        && matches!(relative_executable, "app\\chatgpt.exe" | "app\\codex.exe")
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(any(test, target_os = "windows"))]
+fn is_valid_windows_codex_launch_candidate(path: &Path) -> bool {
+    let normalized = normalized_windows_path_text(path);
+    if !normalized.ends_with(".exe") || is_codex_embedded_backend_executable(path) {
+        return false;
+    }
+    // Do not reuse a stale auto-detected ChatGPT Classic or other Store path.
+    !normalized.contains("\\windowsapps\\")
+        || is_codex_windows_store_desktop_executable(path)
+}
+
+#[cfg(any(test, target_os = "windows"))]
+fn resolve_windows_codex_custom_path(custom: &str) -> Option<PathBuf> {
+    let path = PathBuf::from(custom);
+    if path.is_file() {
+        return is_valid_windows_codex_launch_candidate(&path).then_some(path);
+    }
+    if path.is_dir() {
+        for app_dir in [path.clone(), path.join("app")] {
+            if let Some(candidate) = find_codex_windows_app_main_exe(&app_dir) {
+                if is_valid_windows_codex_launch_candidate(&candidate) {
+                    return Some(candidate);
+                }
+            }
+        }
+    }
+    None
+}
+
+#[cfg(any(test, target_os = "windows"))]
 fn find_codex_windows_app_main_exe(app_dir: &std::path::Path) -> Option<std::path::PathBuf> {
     for exe_name in ["ChatGPT.exe", "Codex.exe"] {
         let candidate = app_dir.join(exe_name);
-        if candidate.exists() {
+        if candidate.is_file() {
             return Some(candidate);
         }
     }
@@ -2176,7 +2199,7 @@ fn find_codex_windows_app_main_exe(app_dir: &std::path::Path) -> Option<std::pat
 
 #[cfg(target_os = "windows")]
 fn detect_codex_exec_path_by_windowsapps_scan() -> Option<std::path::PathBuf> {
-    let mut best: Option<(u8, Vec<u32>, std::path::PathBuf)> = None;
+    let mut best: Option<(Vec<u32>, std::path::PathBuf)> = None;
 
     for drive_root in windows_fixed_drive_roots() {
         let drive_letter = drive_root.to_string_lossy().chars().next().unwrap_or('C');
@@ -2208,8 +2231,6 @@ fn detect_codex_exec_path_by_windowsapps_scan() -> Option<std::path::PathBuf> {
             let Some(version) = parse_codex_store_version_from_dir_name(&dir_name) else {
                 continue;
             };
-            let package_priority = codex_store_package_priority(&dir_name);
-
             let candidate = match find_codex_windows_app_main_exe(&entry.path().join("app")) {
                 Some(path) => path,
                 None => continue,
@@ -2217,19 +2238,17 @@ fn detect_codex_exec_path_by_windowsapps_scan() -> Option<std::path::PathBuf> {
 
             let replace = match &best {
                 None => true,
-                Some((best_priority, best_version, _)) => {
-                    package_priority > *best_priority
-                        || (package_priority == *best_priority
-                            && compare_windows_store_version(&version, best_version).is_gt())
+                Some((best_version, _)) => {
+                    compare_windows_store_version(&version, best_version).is_gt()
                 }
             };
             if replace {
-                best = Some((package_priority, version, candidate));
+                best = Some((version, candidate));
             }
         }
     }
 
-    if let Some((_, _, path)) = best {
+    if let Some((_, path)) = best {
         crate::modules::logger::log_info(&format!(
             "[Path Detect] codex windowsapps scan hit: {}",
             path.to_string_lossy()
@@ -2242,25 +2261,15 @@ fn detect_codex_exec_path_by_windowsapps_scan() -> Option<std::path::PathBuf> {
 
 #[cfg(target_os = "windows")]
 fn detect_codex_exec_path_by_appx_install_location() -> Option<std::path::PathBuf> {
-    let script = r#"$names = @('OpenAI.ChatGPT', 'OpenAI.ChatGPT-Desktop', 'OpenAI.Codex')
-$pkg = $names |
-  ForEach-Object { Get-AppxPackage -Name $_ -ErrorAction SilentlyContinue } |
-  Sort-Object @{ Expression = { if ($_.Name -like 'OpenAI.ChatGPT*') { 0 } else { 1 } } }, @{ Expression = { $_.Version }; Descending = $true } |
-  Select-Object -First 1
-if (-not $pkg) {
-  $pkg = Get-AppxPackage |
-    Where-Object {
-      $_.Name -like 'OpenAI.ChatGPT*' -or
-      $_.Name -like 'OpenAI.Codex*' -or
-      $_.PackageFamilyName -like 'OpenAI.ChatGPT*' -or
-      $_.PackageFamilyName -like 'OpenAI.Codex*'
-    } |
-  Sort-Object @{ Expression = { if ($_.Name -like 'OpenAI.ChatGPT*' -or $_.PackageFamilyName -like 'OpenAI.ChatGPT*') { 0 } else { 1 } } }, @{ Expression = { $_.Version }; Descending = $true } |
-  Select-Object -First 1
-}
-if ($pkg -and -not [string]::IsNullOrWhiteSpace($pkg.InstallLocation)) {
-  Write-Output ([string]$pkg.InstallLocation.Trim())
-}"#;
+    // The Codex package now displays as ChatGPT. ChatGPT Classic is a separate
+    // OpenAI.ChatGPT-Desktop package and must not be selected by display name.
+    let script = r#"Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction SilentlyContinue |
+  Sort-Object Version -Descending |
+  ForEach-Object {
+    if (-not [string]::IsNullOrWhiteSpace($_.InstallLocation)) {
+      Write-Output ([string]$_.InstallLocation.Trim())
+    }
+  }"#;
 
     let output =
         powershell_output_with_timeout(&["-Command", script], WINDOWS_PROCESS_PROBE_TIMEOUT)
@@ -2294,13 +2303,8 @@ if ($pkg -and -not [string]::IsNullOrWhiteSpace($pkg.InstallLocation)) {
 #[cfg(target_os = "windows")]
 fn detect_codex_store_app_user_model_id_by_startapps() -> Option<String> {
     let script = r#"$entry = Get-StartApps |
-  Where-Object {
-    $_.AppID -like 'OpenAI.ChatGPT*' -or
-    $_.AppID -like 'OpenAI.Codex_*' -or
-    $_.Name -like 'ChatGPT*' -or
-    $_.Name -like 'Codex*'
-  } |
-  Sort-Object @{ Expression = { if ($_.AppID -like 'OpenAI.ChatGPT*' -or $_.Name -like 'ChatGPT*') { 0 } else { 1 } } }, Name |
+  Where-Object { $_.AppID -like 'OpenAI.Codex_*!*' } |
+  Sort-Object AppID |
   Select-Object -First 1
 if ($entry -and -not [string]::IsNullOrWhiteSpace($entry.AppID)) {
   Write-Output ([string]$entry.AppID.Trim())
@@ -2323,22 +2327,9 @@ if ($entry -and -not [string]::IsNullOrWhiteSpace($entry.AppID)) {
 
 #[cfg(target_os = "windows")]
 fn detect_codex_store_app_user_model_id_by_appx_fallback() -> Option<String> {
-    let script = r#"$names = @('OpenAI.ChatGPT', 'OpenAI.ChatGPT-Desktop', 'OpenAI.Codex')
-$pkg = $names |
-  ForEach-Object { Get-AppxPackage -Name $_ -ErrorAction SilentlyContinue } |
-  Sort-Object @{ Expression = { if ($_.Name -like 'OpenAI.ChatGPT*') { 0 } else { 1 } } }, @{ Expression = { $_.Version }; Descending = $true } |
+    let script = r#"$pkg = Get-AppxPackage -Name 'OpenAI.Codex' -ErrorAction SilentlyContinue |
+  Sort-Object Version -Descending |
   Select-Object -First 1
-if (-not $pkg) {
-  $pkg = Get-AppxPackage |
-    Where-Object {
-      $_.Name -like 'OpenAI.ChatGPT*' -or
-      $_.Name -like 'OpenAI.Codex*' -or
-      $_.PackageFamilyName -like 'OpenAI.ChatGPT*' -or
-      $_.PackageFamilyName -like 'OpenAI.Codex*'
-    } |
-  Sort-Object @{ Expression = { if ($_.Name -like 'OpenAI.ChatGPT*' -or $_.PackageFamilyName -like 'OpenAI.ChatGPT*') { 0 } else { 1 } } }, @{ Expression = { $_.Version }; Descending = $true } |
-  Select-Object -First 1
-}
 if ($pkg -and -not [string]::IsNullOrWhiteSpace($pkg.PackageFamilyName)) {
   Write-Output ([string]($pkg.PackageFamilyName.Trim() + '!App'))
 }"#;
@@ -2537,10 +2528,15 @@ pub(crate) fn detect_codex_exec_path() -> Option<std::path::PathBuf> {
 
     #[cfg(target_os = "windows")]
     {
-        if let Some(path) = detect_codex_exec_path_by_windowsapps_scan() {
+        // A running package process provides the exact desktop executable even
+        // when WindowsApps enumeration is denied or an update changed its path.
+        if let Some(path) = detect_codex_windows_running_desktop_path() {
             return Some(path);
         }
         if let Some(path) = detect_codex_exec_path_by_appx_install_location() {
+            return Some(path);
+        }
+        if let Some(path) = detect_codex_exec_path_by_windowsapps_scan() {
             return Some(path);
         }
     }
@@ -2558,6 +2554,69 @@ pub(crate) fn detect_codex_exec_path() -> Option<std::path::PathBuf> {
     }
 
     None
+}
+
+#[cfg(target_os = "windows")]
+fn detect_codex_windows_running_desktop_path() -> Option<PathBuf> {
+    let mut system = System::new();
+    system.refresh_processes_specifics(
+        sysinfo::ProcessesToUpdate::All,
+        true,
+        ProcessRefreshKind::nothing().with_exe(UpdateKind::OnlyIfNotSet),
+    );
+    let mut candidates: Vec<PathBuf> = system
+        .processes()
+        .values()
+        .filter_map(|process| process.exe())
+        .filter(|path| is_codex_windows_store_desktop_executable(path) && path.is_file())
+        .map(Path::to_path_buf)
+        .collect();
+    candidates.sort();
+    candidates.dedup();
+    candidates.into_iter().next()
+}
+
+/// Observe the desktop independently of launcher discovery. A failed launcher
+/// lookup must never turn an unknown running state into permission to overwrite
+/// its account profile.
+pub fn check_codex_desktop_running() -> Result<bool, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let configured = resolve_windows_codex_custom_path(&config::get_user_config().codex_app_path);
+        let mut system = System::new();
+        system.refresh_processes_specifics(
+            sysinfo::ProcessesToUpdate::All,
+            true,
+            ProcessRefreshKind::nothing().with_exe(UpdateKind::OnlyIfNotSet),
+        );
+        if system.processes().is_empty() {
+            return Err("Could not inspect the Windows process list".to_string());
+        }
+        let mut unreadable_desktop = false;
+        for process in system.processes().values() {
+            if let Some(executable) = process.exe() {
+                if is_codex_windows_store_desktop_executable(executable)
+                    || configured.as_ref().is_some_and(|expected| {
+                        normalized_windows_path_text(expected)
+                            == normalized_windows_path_text(executable)
+                    })
+                {
+                    return Ok(true);
+                }
+            } else {
+                let name = process.name().to_string_lossy().to_ascii_lowercase();
+                unreadable_desktop |= matches!(name.as_str(), "chatgpt.exe" | "codex.exe");
+            }
+        }
+        if unreadable_desktop {
+            return Err("Could not identify a running Codex or ChatGPT executable".to_string());
+        }
+        Ok(false)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Ok(!collect_codex_process_entries().is_empty())
+    }
 }
 
 #[cfg(any(target_os = "linux", test))]
@@ -2616,7 +2675,8 @@ fn is_legacy_codex_store_launch_path(path: &Path) -> bool {
 
 #[cfg(any(test, target_os = "windows"))]
 fn is_chatgpt_windows_launch_path(path: &Path) -> bool {
-    normalized_windows_path_text(path).ends_with("\\chatgpt.exe")
+    is_codex_windows_store_desktop_executable(path)
+        && normalized_windows_path_text(path).ends_with("\\chatgpt.exe")
 }
 
 #[cfg(any(test, target_os = "macos"))]
@@ -2876,13 +2936,9 @@ pub fn ensure_vscode_launch_path_configured() -> Result<(), String> {
 pub fn ensure_codex_launch_path_configured() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        if detect_codex_store_app_user_model_id().is_some() {
-            return Ok(());
-        }
-        if resolve_codex_launch_path().is_ok() {
-            return Ok(());
-        }
-        return Err("未检测到 Codex 商店安装，请先在 Microsoft Store 安装 Codex".to_string());
+        // Managed launch and PID matching both require this concrete desktop
+        // executable. A Start menu entry alone cannot satisfy their preflight.
+        return resolve_codex_launch_path().map(|_| ());
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -3194,6 +3250,11 @@ fn resolve_codex_launch_path() -> Result<std::path::PathBuf, String> {
         if let Some(migrated) = migrate_legacy_codex_launch_path(&custom) {
             return Ok(migrated);
         }
+        #[cfg(target_os = "windows")]
+        if let Some(exec) = resolve_windows_codex_custom_path(&custom) {
+            return Ok(exec);
+        }
+        #[cfg(not(target_os = "windows"))]
         if let Some(exec) = resolve_macos_exec_path(&custom, "Codex") {
             return Ok(exec);
         }

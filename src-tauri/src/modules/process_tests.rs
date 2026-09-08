@@ -339,7 +339,7 @@ mod codex_path_migration_tests {
                 r"C:\Program Files\WindowsApps\OpenAI.Codex_1.0.0.0_x64__8wekyb3d8bbwe\app\Codex.exe"
             ),
             Path::new(
-                r"C:\Program Files\WindowsApps\OpenAI.ChatGPT_2.0.0.0_x64__8wekyb3d8bbwe\app\ChatGPT.exe"
+                r"C:\Program Files\WindowsApps\OpenAI.Codex_2.0.0.0_x64__2p2nqsd0c76g0\app\ChatGPT.exe"
             ),
         ));
     }
@@ -433,6 +433,9 @@ mod codex_path_migration_tests {
     #[test]
     fn scan_excludes_embedded_resources_backend() {
         assert!(is_codex_embedded_backend_executable(Path::new(
+            r"C:\Users\Test\AppData\Local\OpenAI\Codex\bin\8e5b6932251c2c1c\codex.exe"
+        )));
+        assert!(is_codex_embedded_backend_executable(Path::new(
             r"C:\Program Files\WindowsApps\OpenAI.Codex_26.707.9564.0_x64__2p2nqsd0c76g0\app\resources\codex.exe"
         )));
         assert!(!is_codex_embedded_backend_executable(Path::new(
@@ -441,6 +444,124 @@ mod codex_path_migration_tests {
         assert!(!is_codex_embedded_backend_executable(Path::new(
             r"C:\Program Files\WindowsApps\OpenAI.Codex_1.0.0.0_x64__2p2nqsd0c76g0\app\Codex.exe"
         )));
+    }
+}
+
+#[cfg(test)]
+mod codex_windows_launch_preflight_tests {
+    use super::{
+        find_codex_windows_app_main_exe, is_codex_windows_store_desktop_executable,
+        is_valid_windows_codex_launch_candidate, parse_codex_store_version_from_dir_name,
+        resolve_windows_codex_custom_path, should_migrate_legacy_codex_launch_path,
+    };
+    use std::path::{Path, PathBuf};
+
+    struct Fixture(PathBuf);
+
+    impl Fixture {
+        fn new() -> Self {
+            let path = std::env::temp_dir().join(format!("dynam-codex-launch-{}", uuid::Uuid::new_v4()));
+            std::fs::create_dir(&path).unwrap();
+            Self(path)
+        }
+    }
+
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn recognizes_codex_package_even_when_desktop_is_named_chatgpt() {
+        for path in [
+            r"C:\Program Files\WindowsApps\OpenAI.Codex_26.901.6511.0_x64__2p2nqsd0c76g0\app\ChatGPT.exe",
+            "C:/Program Files/WindowsApps/OpenAI.Codex_26.901.6511.0_x64__2p2nqsd0c76g0/app/Codex.exe",
+        ] {
+            assert!(is_codex_windows_store_desktop_executable(Path::new(path)));
+            assert!(is_valid_windows_codex_launch_candidate(Path::new(path)));
+        }
+        assert_eq!(
+            parse_codex_store_version_from_dir_name("OpenAI.Codex_26.901.6511.0_x64__2p2nqsd0c76g0"),
+            Some(vec![26, 901, 6511, 0])
+        );
+    }
+
+    #[test]
+    fn rejects_classic_and_backend_even_when_the_filename_matches() {
+        for path in [
+            r"C:\Program Files\WindowsApps\OpenAI.ChatGPT-Desktop_1.0.0.0_x64__publisher\app\ChatGPT.exe",
+            r"C:\Program Files\WindowsApps\OpenAI.ChatGPT_1.0.0.0_x64__publisher\app\ChatGPT.exe",
+            r"C:\Program Files\WindowsApps\OpenAI.Codex_26.901.6511.0_x64__2p2nqsd0c76g0\app\resources\codex.exe",
+            r"C:\Users\Test\AppData\Local\OpenAI\Codex\bin\buildhash\codex.exe",
+        ] {
+            assert!(!is_codex_windows_store_desktop_executable(Path::new(path)));
+            assert!(!is_valid_windows_codex_launch_candidate(Path::new(path)));
+        }
+        assert!(parse_codex_store_version_from_dir_name("OpenAI.ChatGPT_1.0.0.0_x64__publisher").is_none());
+        assert!(!should_migrate_legacy_codex_launch_path(
+            Path::new(r"C:\Program Files\WindowsApps\OpenAI.Codex_1.0.0.0_x64__publisher\app\Codex.exe"),
+            Path::new(r"C:\Program Files\WindowsApps\OpenAI.ChatGPT-Desktop_2.0.0.0_x64__publisher\app\ChatGPT.exe"),
+        ));
+    }
+
+    #[test]
+    fn resolves_custom_application_folder_to_file_before_launch() {
+        let fixture = Fixture::new();
+        let app_dir = fixture.0.join("app");
+        std::fs::create_dir(&app_dir).unwrap();
+        // An executable-looking directory must not satisfy preflight.
+        std::fs::create_dir(app_dir.join("ChatGPT.exe")).unwrap();
+        assert!(find_codex_windows_app_main_exe(&app_dir).is_none());
+        assert!(resolve_windows_codex_custom_path(fixture.0.to_str().unwrap()).is_none());
+        let executable = app_dir.join("Codex.exe");
+        std::fs::write(&executable, b"synthetic executable fixture").unwrap();
+        assert_eq!(resolve_windows_codex_custom_path(fixture.0.to_str().unwrap()), Some(executable.clone()));
+        assert_eq!(resolve_windows_codex_custom_path(executable.to_str().unwrap()), Some(executable));
+        assert!(resolve_windows_codex_custom_path(fixture.0.join("missing.exe").to_str().unwrap()).is_none());
+    }
+}
+
+#[cfg(test)]
+mod codex_windows_app_server_cleanup_tests {
+    use super::{codex_windows_captured_process_matches, is_codex_windows_direct_app_server};
+    use std::path::Path;
+
+    const BACKEND: &str = r"C:\Users\Test\AppData\Local\OpenAI\Codex\bin\buildhash\codex.exe";
+
+    fn matches(parent: u32, executable: &str, args: &[&str]) -> bool {
+        let arguments: Vec<String> = std::iter::once(executable)
+            .chain(args.iter().copied())
+            .map(str::to_string)
+            .collect();
+        is_codex_windows_direct_app_server(parent, Path::new(executable), &arguments, &[100])
+    }
+
+    #[test]
+    fn only_captures_direct_stdio_children_of_selected_desktops() {
+        assert!(matches(100, BACKEND, &["app-server"]));
+        assert!(matches(100, BACKEND, &["-c", "features.code_mode_host=true", "app-server", "--analytics-default-enabled", "-c", "synthetic=true"]));
+        assert!(matches(100, BACKEND, &["--config=synthetic=true", "app-server"]));
+        assert!(!matches(100, BACKEND, &["-c", "app-server"]));
+        assert!(!matches(100, BACKEND, &["-c", "synthetic=app-server", "exec"]));
+        assert!(matches(100, BACKEND, &["app-server", "--listen", "stdio://"]));
+        assert!(matches(100, BACKEND, &["app-server", "--listen=stdio://"]));
+        assert!(!matches(200, BACKEND, &["app-server"]));
+        assert!(!matches(0, BACKEND, &["app-server"]));
+        assert!(!matches(100, BACKEND, &["exec", "synthetic"]));
+        assert!(!matches(100, BACKEND, &["app-server", "daemon", "start"]));
+        assert!(!matches(100, BACKEND, &["app-server", "--listen", "ws://127.0.0.1:1234"]));
+        assert!(!matches(100, BACKEND, &["app-server", "--listen=ws://127.0.0.1:1234"]));
+        assert!(!matches(100, r"C:\Other\codex.exe", &["app-server"]));
+    }
+
+    #[test]
+    fn refuses_reused_pid_or_changed_executable_before_cleanup() {
+        let original = Path::new(BACKEND);
+        assert!(codex_windows_captured_process_matches(1000, original, 1000, original));
+        assert!(!codex_windows_captured_process_matches(1000, original, 1001, original));
+        assert!(!codex_windows_captured_process_matches(0, original, 0, original));
+        assert!(!codex_windows_captured_process_matches(1000, original, 1000, Path::new(r"C:\Other\codex.exe")));
     }
 }
 

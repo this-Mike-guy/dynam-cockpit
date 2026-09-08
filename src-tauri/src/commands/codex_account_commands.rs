@@ -696,7 +696,9 @@ async fn stop_default_codex_runtime_before_auth_commit() -> Result<(), String> {
     let launch_mode = crate::modules::codex_instance::load_default_settings()?.launch_mode;
     crate::modules::codex_app_injection::stop_for_profile(&codex_home);
 
-    if launch_mode == crate::models::InstanceLaunchMode::App {
+    if launch_mode == crate::models::InstanceLaunchMode::App
+        || crate::modules::codex_restart_guard::desktop_is_running().await?
+    {
         tauri::async_runtime::spawn_blocking(|| process::close_codex_default(20))
             .await
             .map_err(|error| format!("停止 Codex 旧授权运行态后台任务失败: {}", error))??;
@@ -1009,6 +1011,21 @@ pub async fn switch_codex_account(
             process::ensure_codex_launch_path_configured()?;
         }
     }
+    // The selected launch mode does not prove that an already-open desktop is
+    // idle or unaffected by replacing the default profile.
+    if let Err(error) = crate::modules::codex_restart_guard::confirm_desktop_change(&app).await {
+        if error == "CODEX_START_CANCELLED" {
+            progress_guard.completed = true;
+            let _ = app.emit("codex:switch-progress", serde_json::json!({
+                "type": "cancelled",
+                "accountId": account_id,
+                "cancelled": true,
+                "canRetry": false,
+            }));
+        }
+        return Err(error);
+    }
+    ensure_codex_switch_not_cancelled(&account_id)?;
 
     emit_codex_switch_step(
         &app,
@@ -1122,7 +1139,9 @@ pub async fn switch_codex_account(
                 44,
                 serde_json::json!({}),
             );
+            ensure_codex_switch_not_cancelled(&step_account_id)?;
             stop_default_codex_runtime_before_auth_commit().await?;
+            ensure_codex_switch_not_cancelled(&step_account_id)?;
             emit_codex_switch_step(
                 &step_app,
                 &step_account_id,
@@ -1442,6 +1461,12 @@ async fn run_codex_post_refresh_checks(app: &AppHandle) {
     let mut switched = false;
 
     match codex_account::pick_auto_switch_target_if_needed() {
+        Ok(Some(_)) if crate::modules::codex_restart_guard::desktop_is_running()
+            .await
+            .unwrap_or(true) =>
+        {
+            logger::log_info("[AutoSwitch][Codex] Deferred while the desktop is open; finish active tasks and switch manually");
+        }
         Ok(Some(target)) => {
             let target_id = target.id.clone();
             match switch_codex_account(app.clone(), target_id.clone(), None, None, None).await

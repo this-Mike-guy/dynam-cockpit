@@ -1676,6 +1676,143 @@ fn close_captured_codex_direct_app_servers(
 }
 
 #[cfg(target_os = "windows")]
+#[derive(Clone, Debug)]
+struct CapturedCodexWindowsAppServer {
+    pid: u32,
+    start_time: u64,
+    executable: PathBuf,
+}
+
+#[cfg(any(test, target_os = "windows"))]
+fn is_codex_windows_direct_app_server(
+    parent_pid: u32,
+    executable: &Path,
+    arguments: &[String],
+    root_pids: &[u32],
+) -> bool {
+    // Electron passes global -c overrides before the subcommand. Consume their
+    // values as values, so a configuration string containing "app-server" can
+    // never be mistaken for the actual subcommand.
+    let mut subcommand_index = 1;
+    while let Some(argument) = arguments.get(subcommand_index) {
+        if argument == "-c" || argument == "--config" {
+            if arguments.get(subcommand_index + 1).is_none() {
+                return false;
+            }
+            subcommand_index += 2;
+        } else if argument.starts_with("--config=")
+            || (argument.starts_with("-c") && argument.len() > 2)
+        {
+            subcommand_index += 1;
+        } else {
+            break;
+        }
+    }
+    // A backend filename alone does not identify a managed process. Only the
+    // direct stdio app-server child of a selected desktop may be stopped.
+    parent_pid != 0
+        && root_pids.contains(&parent_pid)
+        && is_codex_embedded_backend_executable(executable)
+        && arguments.get(subcommand_index).map(String::as_str) == Some("app-server")
+        && arguments.get(subcommand_index + 1).map(String::as_str) != Some("daemon")
+        && !arguments.iter().enumerate().skip(subcommand_index + 1).any(|(index, argument)| {
+            (argument == "--listen"
+                && !matches!(arguments.get(index + 1).map(String::as_str), Some("stdio://")))
+                || (argument.starts_with("--listen=") && argument != "--listen=stdio://")
+        })
+}
+
+#[cfg(any(test, target_os = "windows"))]
+fn codex_windows_captured_process_matches(
+    captured_start_time: u64,
+    captured_executable: &Path,
+    current_start_time: u64,
+    current_executable: &Path,
+) -> bool {
+    // Recheck creation time as well as path: Windows can reuse a PID after the
+    // desktop exits, including for a new process with the same executable.
+    captured_start_time != 0
+        && captured_start_time == current_start_time
+        && normalized_windows_path_text(captured_executable)
+            == normalized_windows_path_text(current_executable)
+}
+
+#[cfg(target_os = "windows")]
+fn capture_codex_windows_direct_app_servers(
+    root_pids: &[u32],
+) -> Vec<CapturedCodexWindowsAppServer> {
+    let mut system = System::new();
+    system.refresh_processes_specifics(
+        sysinfo::ProcessesToUpdate::All,
+        true,
+        ProcessRefreshKind::nothing()
+            .with_exe(UpdateKind::OnlyIfNotSet)
+            .with_cmd(UpdateKind::OnlyIfNotSet),
+    );
+    system
+        .processes()
+        .iter()
+        .filter_map(|(pid, process)| {
+            let parent_pid = process.parent()?.as_u32();
+            let executable = process.exe()?;
+            if !root_pids.contains(&parent_pid) || !is_codex_embedded_backend_executable(executable) {
+                return None;
+            }
+            let arguments: Vec<String> = process
+                .cmd()
+                .iter()
+                .map(|argument| argument.to_string_lossy().into_owned())
+                .collect();
+            is_codex_windows_direct_app_server(parent_pid, executable, &arguments, root_pids)
+                .then(|| CapturedCodexWindowsAppServer {
+                    pid: pid.as_u32(),
+                    start_time: process.start_time(),
+                    executable: executable.to_path_buf(),
+                })
+        })
+        .collect()
+}
+
+#[cfg(target_os = "windows")]
+fn close_captured_codex_windows_direct_app_servers(
+    captured: &[CapturedCodexWindowsAppServer],
+    timeout_secs: u64,
+) -> Result<(), String> {
+    if captured.is_empty() {
+        return Ok(());
+    }
+    let pids: Vec<Pid> = captured.iter().map(|entry| Pid::from_u32(entry.pid)).collect();
+    let mut system = System::new();
+    system.refresh_processes_specifics(
+        sysinfo::ProcessesToUpdate::Some(&pids),
+        true,
+        ProcessRefreshKind::nothing().with_exe(UpdateKind::OnlyIfNotSet),
+    );
+    let remaining: Vec<u32> = captured
+        .iter()
+        .filter_map(|entry| {
+            let process = system.process(Pid::from_u32(entry.pid))?;
+            codex_windows_captured_process_matches(
+                entry.start_time,
+                &entry.executable,
+                process.start_time(),
+                process.exe()?,
+            )
+            .then_some(entry.pid)
+        })
+        .collect();
+    if remaining.is_empty() {
+        return Ok(());
+    }
+    crate::modules::logger::log_info(&format!(
+        "[Codex Close] closing captured desktop app-server pids={}",
+        summarize_pid_list_for_log(&remaining)
+    ));
+    close_pids(&remaining, timeout_secs.min(5).max(1))
+        .map_err(|error| format!("failed to close Codex app-server before auth switch: {}", error))
+}
+
+#[cfg(target_os = "windows")]
 fn collect_codex_process_entries_from_powershell(
     expected_exe_path: &str,
 ) -> Vec<(u32, Option<String>)> {

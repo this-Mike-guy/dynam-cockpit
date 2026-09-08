@@ -325,6 +325,7 @@ pub async fn codex_local_access_delete_api_key(
 
 #[tauri::command]
 pub async fn codex_local_access_set_enabled(
+    app: AppHandle,
     enabled: bool,
 ) -> Result<CodexLocalAccessState, String> {
     let codex_home = codex_account::get_codex_home();
@@ -337,6 +338,7 @@ pub async fn codex_local_access_set_enabled(
         },
     )?;
     if enabled {
+        crate::modules::codex_restart_guard::confirm_desktop_change(&app).await?;
         stop_default_codex_runtime_before_auth_commit().await?;
     }
     codex_local_access::set_local_access_enabled(enabled).await
@@ -365,6 +367,7 @@ pub async fn codex_local_access_activate(
     let codex_home = launch_target.user_data_dir.clone();
     let _profile_lease =
         codex_account::try_acquire_profile_mutation_lease(&codex_home, "api-service-activate")?;
+    crate::modules::codex_restart_guard::confirm_desktop_change(&app).await?;
     // 先停止目标 profile 的官方客户端，再写入 API Service 凭据。
     if launch_target.is_default {
         stop_default_codex_runtime_before_auth_commit().await?;

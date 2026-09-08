@@ -208,7 +208,8 @@
         "recommendedDescTooltip": "按推荐度降序（最值得切去的在前）",
         "toggleDirection": "切换排序方向",
         "credits": "按剩余 Credits",
-        "planEnd": "按配额周期结束时间"
+        "planEnd": "按配额周期结束时间",
+        "name": "按名称"
       },
       "sortLabel": "排序",
       "token": {
@@ -277,7 +278,8 @@
       },
       "clear": "清除",
       "loginSuccess": "登录成功",
-      "switchAccount": "切换账号"
+      "switchAccount": "切换账号",
+      "close": "关闭"
     },
     "appName": "Cockpit Tools",
     "collapse": "收起",
@@ -286,7 +288,26 @@
     "deleteTagWarning": "确定要从所有账号中移除标签 ",
     "expand": "展开",
     "processing": "处理中...",
-    "selectAll": "全选"
+    "selectAll": "全选",
+    "noData": "暂无数据",
+    "clear": "清除",
+    "unknown": "未知模型",
+    "retry": "重试",
+    "search": "搜索渠道或模型...",
+    "clearAll": "全部取消",
+    "clickToRemove": "点击取消选择",
+    "clickToAdd": "点击添加模型",
+    "added": "已添加",
+    "rename": "重命名",
+    "yes": "是",
+    "no": "否",
+    "filter": "过滤...",
+    "remove": "删除",
+    "saved": "已保存",
+    "edit": "编辑",
+    "done": "完成",
+    "status": "状态",
+    "syncing": "同步中..."
   },
   "floatingCard": {
     "selectPlatform": "切换平台",
@@ -535,7 +556,8 @@
       "claudeShort": "Claude CLI"
     },
     "prefill": {
-      "claudeDesktopReady": "已带入 APIKEY.FUN 配置，请确认后添加到 Claude。"
+      "claudeDesktopReady": "已带入 APIKEY.FUN 配置，请确认后添加到 Claude。",
+      "codexReady": "已带入 APIKEY.FUN 配置，请确认后添加到 Codex。"
     }
   },
   "platformLayout": {
@@ -626,7 +648,8 @@
       "showFloatingCardDisabled": "请先绑定账号后再显示悬浮框",
       "showFloatingCardMissing": "绑定账号不存在，无法显示悬浮框",
       "syncThreads": "同步线程",
-      "syncThreadsDisabled": "至少需要两个实例才能同步线程"
+      "syncThreadsDisabled": "至少需要两个实例才能同步线程",
+      "duplicate": "复制实例"
     },
     "bulkConfirm": {
       "startAll": "确认启动所有未运行实例？",
@@ -657,7 +680,8 @@
       "email": "账号",
       "quota": "配额状态",
       "actions": "操作",
-      "speed": "速度"
+      "speed": "速度",
+      "account": "账号"
     },
     "empty": {
       "title": "还没有实例",
@@ -731,7 +755,8 @@
         "validation": {
           "contextWindowInvalid": "上下文窗口必须是大于 0 的整数",
           "autoCompactInvalid": "自动压缩阈值必须是大于 0 的整数"
-        }
+        },
+        "saveFailed": "保存 Codex 配置失败：{{error}}"
       },
       "modelRouting": {
         "title": "第三方 API 路由",
@@ -751,7 +776,56 @@
         "saveForLater": "仅保存，稍后生效",
         "savedForNextLaunch": "已保存，下次通过 Cockpit 启动 Codex 时生效；当前会话保持不变。",
         "restartRollbackFailed": "新路由启动失败，恢复原配置后仍无法启动：",
-        "restartRolledBack": "新路由启动失败，已恢复原配置并重新启动 Codex：{{error}}"
+        "restartRolledBack": "新路由启动失败，已恢复原配置并重新启动 Codex：{{error}}",
+        "providerModels": "{{name}} · {{count}} 个模型",
+        "providerModelsNotLoaded": "{{name}} · 未获取列表",
+        "enabledTotal": "已启用 / 总数",
+        "selectAllModels": "全选该渠道所有模型",
+        "clearSelectedModels": "清空已选模型",
+        "catalogUnavailable": "当前实例的可见模型目录不可由 Cockpit 管理，暂不能启用模型路由。",
+        "desktopOnly": "混合模型路由仅支持桌面版实例。",
+        "oauthRequired": "混合模型路由需要绑定一个直接登录的 OAuth 订阅账号。",
+        "routeRequired": "请至少添加一个 API 模型路由。",
+        "invalidNamespace": "命名空间需为 2-32 位小写字母、数字、下划线或连字符，且不能使用保留名称。",
+        "duplicateNamespace": "模型路由命名空间不能重复。",
+        "providerRequired": "每个模型路由都必须选择一个 API 账号。",
+        "enabledRouteRequired": "请至少启用一个 API 模型路由。",
+        "statusBadge": "混合路由",
+        "createHint": "新建时请复制默认实例，这样不用先走一遍 Codex 安装。空白实例才需要先启动一次。",
+        "defaultInstanceName": "混合路由",
+        "subscriptionSource": "订阅",
+        "missingSource": "路由缺失",
+        "disabledSource": "路由已停用",
+        "unavailableSource": "账号不可用",
+        "modelUnavailable": "模型已不在 API 目录",
+        "fetchCredentialsRequired": "这个 API 账号缺少 Key 或 Base URL，无法获取模型列表。",
+        "fetchEmpty": "上游没有返回模型，可以在下面手动填写。",
+        "fetchFailed": "获取模型列表失败：{{error}}",
+        "noProviderAccounts": "未检测到可用的 API 账号。请先在「API 账号」页面添加支持的模型服务。",
+        "provider": "选择 API 账号",
+        "namespacePlaceholder": "前缀 (如 cpa)",
+        "deleteRoute": "删除渠道",
+        "loadedModels": "已加载模型",
+        "fetchModels": "获取列表",
+        "addModels": "添加模型",
+        "manualPlaceholder": "gpt-5.5, grok-4.6",
+        "noCatalog": "尚未获取上游模型，点击「获取列表」或手动添加。",
+        "clickToDeselect": "已勾选（点击取消）",
+        "clickToSelect": "未勾选（点击选择）",
+        "addRoute": "添加 API 渠道",
+        "modalTitle": "第三方 API 路由配置",
+        "modalDescription": "配置第三方 API 账号与模型前缀。未配置前缀的模型继续走当前订阅。",
+        "clickToDisable": "点击关闭第三方路由",
+        "clickToEnable": "点击开启第三方路由",
+        "channelsSummary": "第三方 API 渠道",
+        "manageChannels": "配置渠道",
+        "noChannels": "暂未添加第三方 API 渠道",
+        "clickToEdit": "点击配置此渠道",
+        "unnamedAccount": "未选择账号",
+        "routesCount": "{{count}} 个渠道",
+        "modelsCount": "{{count}} 个路由模型",
+        "manageAction": "管理 API 渠道",
+        "enableAction": "配置 API 渠道"
       },
       "nameRequired": "请输入实例名称",
       "pathRequired": "请选择实例目录",
@@ -759,7 +833,8 @@
       "appSpeed": "速度",
       "appSpeedDesc": "启动官方 Codex 前写入对应速度",
       "autoSyncThreads": "自动同步会话",
-      "autoSyncThreadsDesc": "关闭时保持多实例会话隔离；开启后仅在所有 Codex 实例已停止时，启动或关闭实例会自动合并本地会话记录。"
+      "autoSyncThreadsDesc": "关闭时保持多实例会话隔离；开启后仅在所有 Codex 实例已停止时，启动或关闭实例会自动合并本地会话记录。",
+      "copyName": "{{name}} 副本"
     },
     "quota": {
       "unbound": "未绑定账号",
@@ -1194,7 +1269,18 @@
       "menuBarAccountPrefixDesc": "仅普通账号：关闭后不显示邮箱前缀。Codex API 服务 / API Key 仍会显示 API 标签",
       "menuBarQuotaConfirmEnable": "启用",
       "codexHideRelayQuota": "隐藏中转站额度",
-      "codexHideRelayQuotaDesc": "开启后，Codex 账号总览隐藏中转 / New API 类额度面板，减轻列表重叠与视觉干扰。"
+      "codexHideRelayQuotaDesc": "开启后，Codex 账号总览隐藏中转 / New API 类额度面板，减轻列表重叠与视觉干扰。",
+      "account": "Accounts",
+      "codexAutoRestoreTakeoverOnLaunch": "启动时自动恢复 Codex 代理接管",
+      "codexAutoRestoreTakeoverOnLaunchDesc": "工具启动时自动恢复上次的可见模型与代理接管，保持 1M 上下文且无需手动切换",
+      "errorReporting": "遥测诊断",
+      "errorReportingDesc": "默认开启，仅用于排查启动和界面问题；关闭后不会提交遥测事件。上报前会脱敏，不上传账号密码、Token、2FA 秘钥、手机号等敏感信息。",
+      "accountLevelRefreshTitle": "账号级刷新配置",
+      "accountLevelRefreshDesc": "为不同账号设置不同的自动刷新间隔，覆盖平台级默认值。",
+      "accountLevelRefreshSummaryActive": "已配置 {{count}} 个账号",
+      "accountLevelRefreshSummary": "展开配置",
+      "accountLevelRefreshInherit": "继承平台设置",
+      "accountLevelRefreshDisabled": "禁用"
     },
     "tabs": {
       "general": "通用",
@@ -1517,7 +1603,8 @@
       "windowsApp": "微软商店",
       "defaultOnly": "仅适用于默认桌面端；应用多开请选择真实 Claude.exe。",
       "claudeScanEmpty": "未扫描到 Claude Desktop，请手动选择 Claude.exe 或调整扫描范围。",
-      "claudeTargetPlaceholder": "Claude.exe 路径或 shell:AppsFolder\\..."
+      "claudeTargetPlaceholder": "Claude.exe 路径或 shell:AppsFolder\\...",
+      "scanEmptyGeneric": "未检测到正在运行的 {{app}}，请先启动应用后重试，或手动选择路径。"
     }
   },
   "accounts": {
@@ -2294,7 +2381,10 @@
         "contextDefaultShort": "默认",
         "contextCustomShort": "自定义",
         "contextWindow": "上下文窗口",
-        "autoCompactLimit": "压缩阈值"
+        "autoCompactLimit": "压缩阈值",
+        "addCustomBlank": "新建自定义空白模型",
+        "addAll": "+ 全部 ({{count}})",
+        "source": "来源"
       },
       "unavailable": {
         "cacheMissing": "未找到 models_cache.json。请先启动一次 Codex 生成模型缓存；若仍缺失，当前 Codex 版本不支持此缓存格式。",
@@ -2374,15 +2464,17 @@
       "modelConfigDialogDescription": "为每个模型配置可见性、推理强度、上下文窗口和压缩阈值。",
       "applyModelConfig": "应用配置",
       "defaultModel": "默认模型",
-      "repairCompleted": "会话可见性修复完成"
-      ,"forceRefreshTitle": "强制刷新 Token",
+      "repairCompleted": "会话可见性修复完成",
+      "forceRefreshTitle": "强制刷新 Token",
       "forceRefreshReady": "可手动刷新 OAuth Token",
       "forceRefreshDescription": "使用 refresh_token 获取新的 access_token 和 id_token；当前 refresh_token 可能会被轮换。",
       "forceRefreshUnavailable": "当前账号类型不可用",
       "forceRefreshAction": "立即刷新",
       "forceRefreshRunning": "正在刷新 Token…",
       "forceRefreshSuccess": "Token 刷新成功",
-      "forceRefreshRetry": "重新检测"
+      "forceRefreshRetry": "重新检测",
+      "modelRoutingEnabled": "已启用",
+      "modelRoutingDisabled": "未启用"
     },
     "switch": "切换",
     "switched": "已切换至 {{email}}",
@@ -2498,7 +2590,8 @@
       "oauth": "OAuth 授权",
       "token": "API Key",
       "local": "本地导入",
-      "accessToken": "访问令牌"
+      "accessToken": "访问令牌",
+      "targetGroup": "将添加到分组：{{group}}"
     },
     "oauth": {
       "desc": "点击下方按钮，在浏览器中完成 OpenAI 账号 OAuth 授权。",
@@ -2526,7 +2619,8 @@
       "formatRequired": "支持 Agent Identity auth.json、session JSON、完整 tokens、Sub2API 导出 JSON、仅 accessToken、at-… / personal_access_token 或仅 refresh_token。Agent Identity 会保存签名凭据，并由 API 服务为每次上游请求动态签名。",
       "formatSingleLabel": "完整 tokens 示例",
       "formatRefreshOnlyLabel": "session / accessToken / at- / refresh_token 示例",
-      "formatBatchLabel": "批量示例"
+      "formatBatchLabel": "批量示例",
+      "importPartial": "导入完成：成功 {{success}} 个，失败 {{failed}} 个。{{errors}}"
     },
     "agentIdentityRegistration": {
       "apiOnlyActionError": "Agent Identity 账号仅支持 API 服务，无法作为普通账号切换或启动。",
@@ -2775,7 +2869,8 @@
         "remember": "我已知晓，不再提示",
         "acknowledge": "我已知晓",
         "continueStart": "继续启动",
-        "continueSwitch": "继续切号"
+        "continueSwitch": "继续切号",
+        "desc": "当前 Codex API 服务相关功能，本质上属于代理转发使用方式。继续使用即表示您已知悉相关情况，并愿意自行承担可能产生的风险。"
       },
       "statsRange": {
         "label": "统计范围",
@@ -2975,7 +3070,8 @@
       "testChatSend": "发送",
       "testChatInputRequired": "请输入测试消息",
       "testChatModelRequired": "请选择模型 ID",
-      "testChatEmptyResponse": "响应为空"
+      "testChatEmptyResponse": "响应为空",
+      "apiKeyRotate": "Rotate Key"
     },
     "api": {
       "baseUrl": "基础地址",
@@ -2996,7 +3092,12 @@
         "fetchCredentialsRequired": "请先填写 API Key 和 Base URL。",
         "fetchEmpty": "上游未返回可用模型，已保留当前列表。",
         "fetchFailed": "获取上游模型失败：{{error}}",
-        "syncRequiresModels": "同步到 Codex 前请先获取或填写模型列表。"
+        "syncRequiresModels": "同步到 Codex 前请先获取或填写模型列表。",
+        "contextWindow": "上下文窗口",
+        "contextWindowPlaceholder": "留空=默认",
+        "contextWindowHint": "可选。官方 / DeepSeek 默认保留厂商值；第三方留空则回落到「上下文与压缩阈值」或 128000。改完需重启 Codex。",
+        "contextWindowInvalid": "上下文窗口必须是大于 0 的整数",
+        "restartHint": "模型目录已更新。若 Codex 正在运行，请重启后生效。"
       },
       "actions": {
         "addAndSwitch": "添加并切换"
@@ -3173,7 +3274,8 @@
         "visionCapability": "图片输入能力",
         "visionModels": "支持图片的模型",
         "visionRoutingModel": "图片请求默认模型",
-        "supportsWebsockets": "WebSocket 传输"
+        "supportsWebsockets": "WebSocket 传输",
+        "apiKey": "API Key"
       },
       "validation": {
         "nameRequired": "供应商名称不能为空",
@@ -3181,7 +3283,9 @@
         "baseUrlExists": "该 Base URL 已存在",
         "providerNotFound": "供应商不存在",
         "apiKeyRequiredOnCreate": "新增供应商时必须至少填写一个 API Key",
-        "apiKeyRequiredWhenEmpty": "当前供应商没有可用 API Key，请先添加一个"
+        "apiKeyRequiredWhenEmpty": "当前供应商没有可用 API Key，请先添加一个",
+        "apiKeyRequired": "API Key 不能为空",
+        "apiKeyExists": "该 API Key 已存在于当前供应商"
       },
       "saveSuccess": "模型供应商已保存",
       "deleteBlocked": "该供应商已被 {{count}} 个账号引用，禁止删除。",
@@ -3397,7 +3501,21 @@
           "expiresAt": "过期时间",
           "totalGranted": "授予额度",
           "totalAvailable": "可用额度",
-          "modelLimitsEnabled": "模型限制"
+          "modelLimitsEnabled": "模型限制",
+          "modelName": "Model",
+          "intervalRemaining": "Interval Remaining",
+          "intervalLimit": "Interval Limit",
+          "intervalRemainingPercent": "Interval Remaining %",
+          "intervalExpiresAt": "Interval Reset",
+          "weeklyRemaining": "Weekly Remaining",
+          "weeklyLimit": "Weekly Limit",
+          "weeklyRemainingPercent": "Weekly Remaining %",
+          "weeklyExpiresAt": "Weekly Reset",
+          "isAvailable": "余额可用",
+          "currency": "币种",
+          "totalBalance": "总余额",
+          "grantedBalance": "赠金余额",
+          "toppedUpBalance": "充值余额"
         },
         "accountBalance": "账户余额",
         "unlimitedQuota": "无限额度",
@@ -3426,7 +3544,14 @@
       "renameApiKeyPrompt": "重命名 API Key",
       "renameApiKeySuccess": "API Key 已重命名",
       "renameApiKeyFailed": "重命名 API Key 失败：{{error}}",
-      "existingApiKeysSearch": "搜索已有 API Key…"
+      "existingApiKeysSearch": "搜索已有 API Key…",
+      "updateApiKeySuccess": "API Key 已更新",
+      "updateApiKeyFailed": "更新 API Key 失败：{{error}}",
+      "batchDeleteConfirm": "确定要删除选中的 {{count}} 个供应商吗？",
+      "batchDeleteSuccess": "已删除 {{count}} 个供应商",
+      "noMatchTitle": "没有匹配的供应商",
+      "apiKeyCopied": "API Key 已复制",
+      "editApiKey": "Edit API Key"
     },
     "quickSwitch": {
       "action": "快速切换供应商",
@@ -4333,7 +4458,8 @@
         "presetDeleted": "方案已删除",
         "presetNameRequired": "请输入方案名称",
         "deletePresetConfirm": "确定删除这个自定义方案吗？",
-        "deletePresetTitle": "删除方案"
+        "deletePresetTitle": "删除方案",
+        "retryTitle": "发送与账号重试"
       },
       "validation": {
         "numberRange": "请输入 {{min}} 到 {{max}} 之间的数字"
@@ -4365,7 +4491,8 @@
         "reasoningEffortValue": "思考 {{effort}}",
         "serviceTier": "服务等级",
         "serviceTierValue": "等级 {{tier}}"
-      }
+      },
+      "customRoutingSelected": "已选 {{count}}"
     },
     "apiKey": {
       "renameSuccess": "已重命名",
@@ -4553,6 +4680,11 @@
     "accounts": {
       "showRelayQuota": "显示中转额度",
       "hideRelayQuota": "隐藏中转额度"
+    },
+    "cli": {
+      "selectWorkingDir": "选择 Codex CLI 工作目录",
+      "launchSuccess": "已启动 Codex CLI",
+      "quickLaunch": "CLI 快速启动"
     }
   },
   "codebuddy": {
@@ -4954,6 +5086,13 @@
     "traeSoloCn": {
       "title": "TRAE SOLO CN 设置",
       "appPath": "TRAE SOLO CN 路径"
+    },
+    "appPath": {
+      "scanEmpty": "未检测到正在运行的应用，请先启动后重试，或手动选择路径。"
+    },
+    "codexWindow": {
+      "orDivider": "OR（命中任一即触发）",
+      "primaryWindowMeaning": "primary_window 一般指 5 小时配额；免费用户下 primary_window 可能对应周配额，不同订阅可能不同。"
     }
   },
   "quotaAlert": {

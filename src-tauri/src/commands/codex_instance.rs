@@ -2979,6 +2979,13 @@ async fn codex_start_instance_internal(
             .map(|item| item.launch_mode)
             .ok_or("实例不存在")?
     };
+    // Resolve the actual desktop launcher before account preparation, stopping
+    // runtimes, or writing any profile, for both default and named instances.
+    if launch_mode_uses_desktop_runtime(&configured_launch_mode) {
+        modules::process::ensure_codex_launch_path_configured()?;
+    }
+    modules::codex_restart_guard::confirm_desktop_change(&app).await?;
+    ensure_codex_instance_start_not_cancelled(&instance_id)?;
     validate_instance_model_routing(
         launch_target.bind_account_id.as_deref(),
         &configured_launch_mode,
@@ -3178,9 +3185,6 @@ async fn codex_start_instance_internal(
         let previous_kind = read_applied_launch_credential_kind_for_dir(&default_dir);
         let default_settings = modules::codex_instance::load_default_settings()?;
         let default_bind_account_id = resolve_default_account_id(&default_settings);
-        if default_settings.launch_mode != InstanceLaunchMode::Cli {
-            modules::process::ensure_codex_launch_path_configured()?;
-        }
         modules::logger::log_info(&format!(
             "[Codex Start] default prepare phase finished: bind_account_id={:?}, launch_mode={:?}, elapsed_ms={}, total_ms={}",
             default_bind_account_id,
@@ -3726,7 +3730,6 @@ async fn codex_start_instance_internal(
         ));
     }
 
-    modules::process::ensure_codex_launch_path_configured()?;
     let extra_args = modules::process::parse_extra_args(&instance.extra_args);
     let cdp_enabled =
         modules::codex_app_injection::should_enable_cdp(instance.bind_account_id.as_deref());

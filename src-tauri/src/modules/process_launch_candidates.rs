@@ -610,7 +610,10 @@ fn is_codex_embedded_backend_executable(path: &std::path::Path) -> bool {
         .to_string_lossy()
         .replace('/', "\\")
         .to_ascii_lowercase();
-    normalized.contains("\\windowsapps\\") && normalized.ends_with("\\app\\resources\\codex.exe")
+    (normalized.contains("\\windowsapps\\")
+        && normalized.ends_with("\\app\\resources\\codex.exe"))
+        || (normalized.contains("\\openai\\codex\\bin\\")
+            && normalized.ends_with("\\codex.exe"))
 }
 
 #[cfg(target_os = "windows")]

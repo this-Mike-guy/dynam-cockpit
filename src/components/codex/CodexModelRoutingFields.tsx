@@ -527,11 +527,11 @@ export function CodexModelRoutingEditor({
           value: account.id,
           label:
             catalogCount > 0
-              ? `${name} · ${catalogCount} 个模型`
-              : `${name} · 未获取列表`,
+              ? t("instances.form.modelRouting.providerModels", { name, count: catalogCount })
+              : t("instances.form.modelRouting.providerModelsNotLoaded", { name }),
         };
       }),
-    [getAccountDisplayText, providerAccounts],
+    [getAccountDisplayText, providerAccounts, t],
   );
 
   const addManualModels = (routeId: string) => {
@@ -798,7 +798,7 @@ export function CodexModelRoutingEditor({
                 <div className="codex-model-routing-card__models-bar">
                   <span className="codex-model-routing-card__models-label">
                     {t("instances.form.modelRouting.loadedModels", "已加载模型")}
-                    <span className="codex-model-routing-summary__count-badge" title="已启用 / 总数">
+                    <span className="codex-model-routing-summary__count-badge" title={t("instances.form.modelRouting.enabledTotal")}>
                       {route.selectedModels ? `${route.selectedModels.length}/${models.length}` : models.length}
                     </span>
                   </span>
@@ -825,7 +825,7 @@ export function CodexModelRoutingEditor({
                           type="button"
                           className="codex-model-routing-card__action-btn"
                           onClick={() => selectAllModels(route.id)}
-                          title="全选该渠道所有模型"
+                          title={t("instances.form.modelRouting.selectAllModels")}
                         >
                           {t("common.selectAll", "全选")}
                         </button>
@@ -833,7 +833,7 @@ export function CodexModelRoutingEditor({
                           type="button"
                           className="codex-model-routing-card__action-btn"
                           onClick={() => clearAllModels(route.id)}
-                          title="清空已选模型"
+                          title={t("instances.form.modelRouting.clearSelectedModels")}
                         >
                           {t("common.clear", "清空")}
                         </button>

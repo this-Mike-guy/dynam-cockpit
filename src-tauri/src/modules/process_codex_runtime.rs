@@ -288,6 +288,7 @@ pub fn close_codex_default_fast_by_pid(
             "[Codex Close] fast default close by last_pid={}",
             pid
         ));
+        let captured_app_servers = capture_codex_windows_direct_app_servers(&[pid]);
         if request_codex_graceful_close(pid) {
             let graceful_wait_secs = timeout_secs.min(2).max(1);
             if wait_pids_exit(&[pid], graceful_wait_secs) {
@@ -295,6 +296,7 @@ pub fn close_codex_default_fast_by_pid(
                     "[Codex Close] fast graceful close finished, pid={}",
                     pid
                 ));
+                close_captured_codex_windows_direct_app_servers(&captured_app_servers, timeout_secs)?;
                 return Ok(true);
             }
         } else {
@@ -313,6 +315,7 @@ pub fn close_codex_default_fast_by_pid(
                     .to_string(),
             );
         }
+        close_captured_codex_windows_direct_app_servers(&captured_app_servers, timeout_secs)?;
         Ok(true)
     }
 
@@ -665,6 +668,7 @@ pub fn close_codex_instances(codex_homes: &[String], timeout_secs: u64) -> Resul
             "准备关闭 {} 个受管 Codex 主进程...",
             pids.len()
         ));
+        let captured_app_servers = capture_codex_windows_direct_app_servers(&pids);
         let graceful_pids: Vec<u32> = pids
             .iter()
             .copied()
@@ -683,6 +687,10 @@ pub fn close_codex_instances(codex_homes: &[String], timeout_secs: u64) -> Resul
                         "[Codex Close] graceful close finished, targets={}",
                         summarize_pid_list_for_log(&pids)
                     ));
+                    close_captured_codex_windows_direct_app_servers(
+                        &captured_app_servers,
+                        timeout_secs,
+                    )?;
                     return Ok(());
                 }
             }
@@ -716,21 +724,7 @@ pub fn close_codex_instances(codex_homes: &[String], timeout_secs: u64) -> Resul
                 }));
             }
         }
-        if includes_default
-            && std::env::var("COCKPIT_CODEX_CLOSE_RESOURCE_CLEANUP")
-                .ok()
-                .as_deref()
-                == Some("1")
-        {
-            let resource_pids = collect_codex_windows_resource_process_pids();
-            if !resource_pids.is_empty() {
-                crate::modules::logger::log_info(&format!(
-                    "[Codex Close] closing bundled resource codex processes for default instance: {}",
-                    summarize_pid_list_for_log(&resource_pids)
-                ));
-                let _ = close_pids(&resource_pids, timeout_secs.min(5).max(1));
-            }
-        }
+        close_captured_codex_windows_direct_app_servers(&captured_app_servers, timeout_secs)?;
 
         let still_running = !collect_running_pids(&pids).is_empty();
         if still_running {
