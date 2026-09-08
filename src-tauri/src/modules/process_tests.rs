@@ -523,6 +523,69 @@ mod codex_windows_launch_preflight_tests {
 }
 
 #[cfg(test)]
+mod codex_desktop_launch_confirmation_tests {
+    use super::{observe_codex_desktop_pid_until, wait_for_observed_codex_desktop_pid};
+    use std::cell::Cell;
+    use std::collections::VecDeque;
+    use std::time::Duration;
+
+    #[test]
+    fn waits_for_late_desktop_after_launcher_handoff() {
+        // None is an unmatched launcher; only the later GUI is recognized by
+        // the profile-aware process probe.
+        let mut observations = VecDeque::from([None, None, Some(42), Some(42)]);
+        let result = wait_for_observed_codex_desktop_pid(
+            || observations.pop_front().flatten(),
+            Duration::from_secs(1),
+            Duration::ZERO,
+        );
+        assert_eq!(result, Some(42));
+        assert!(observations.is_empty());
+    }
+
+    #[test]
+    fn transient_process_does_not_complete_launch_confirmation() {
+        let mut observations = VecDeque::from([Some(7), None, Some(42), Some(42)]);
+        let result = wait_for_observed_codex_desktop_pid(
+            || observations.pop_front().flatten(),
+            Duration::from_secs(1),
+            Duration::ZERO,
+        );
+        assert_eq!(result, Some(42));
+        assert!(observations.is_empty());
+    }
+
+    #[test]
+    fn slow_successful_discovery_still_gets_one_stability_check() {
+        let elapsed = Cell::new(Duration::ZERO);
+        let mut calls = 0;
+        let result = observe_codex_desktop_pid_until(
+            || {
+                calls += 1;
+                elapsed.set(Duration::from_secs(5));
+                Some(42)
+            },
+            || elapsed.get(),
+            Duration::from_secs(3),
+            Duration::ZERO,
+        );
+        assert_eq!(result, Some(42));
+        assert_eq!(calls, 2);
+    }
+
+    #[test]
+    fn exited_or_unmatched_process_times_out_without_success() {
+        let mut observations = VecDeque::from([Some(7), None]);
+        let result = wait_for_observed_codex_desktop_pid(
+            || observations.pop_front().flatten(),
+            Duration::from_millis(10),
+            Duration::from_millis(1),
+        );
+        assert_eq!(result, None);
+    }
+}
+
+#[cfg(test)]
 mod codex_windows_app_server_cleanup_tests {
     use super::{codex_windows_captured_process_matches, is_codex_windows_direct_app_server};
     use std::path::Path;

@@ -1,3 +1,4 @@
+import { CodexLaunchFailure } from './CodexLaunchFailure';
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -669,7 +670,10 @@ export function CodexSwitchProgressModal() {
           )}
           {isError && !authFailure && (
             <div className="codex-switch-progress-error" role="alert">
-              {windowsOperationError?.originalReason || state.error}
+              <CodexLaunchFailure error={windowsOperationError?.originalReason || state.error} onOpenSettings={() => {
+                setState(null);
+                window.dispatchEvent(new CustomEvent('app-request-navigate', { detail: 'settings' }));
+              }} />
             </div>
           )}
         </div>

@@ -825,6 +825,7 @@ pub fn run() {
             // Codex Commands
             commands::codex::list_codex_accounts,
             commands::codex::get_current_codex_account,
+            commands::codex::get_codex_desktop_status,
             commands::codex::get_codex_config_toml_path,
             commands::codex::open_codex_config_toml,
             commands::codex::get_codex_quick_config,

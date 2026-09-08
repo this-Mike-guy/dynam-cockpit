@@ -13,6 +13,7 @@ Source for this fork: <https://github.com/this-Mike-guy/dynam-cockpit>.
 - Version `1.3.43-dynam.2` recognizes the Windows `OpenAI.Codex` package even when its desktop executable is named `ChatGPT.exe`. ChatGPT Classic and bundled Codex command-line processes are excluded from automatic desktop selection.
 - Desktop launch validation runs before preparing credentials, stopping an instance, or writing its profile. If Codex is open, manual changes require a restart confirmation; this detects the application, not whether its tasks are idle. Automatic switching defers while the desktop is open.
 - English entries cover missing buttons and labels in the Codex and settings flows, including Retry. Other languages and upstream attribution remain available.
+- Version `1.3.43-dynam.3` distinguishes the saved Codex profile from the desktop's signed-in account. The accounts page reports whether a Codex process is detected, not detected, or unknown; task activity and the running account are explicitly unverified. Launch completion requires observing the desktop process, but does not claim that its account identity has been verified.
 
 ## License and attribution
 

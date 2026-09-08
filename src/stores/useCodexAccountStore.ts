@@ -270,7 +270,9 @@ export const useCodexAccountStore = create<CodexAccountState>((set, get) => ({
     } catch (error) {
       // Token Authority 可能已把账号标记为 requires_reauth。立即回读账号库，
       // 让账号卡片和切号弹框都展示最新的 API-only / 需授权状态。
-      void get().fetchAccounts();
+      // A later launch failure may follow a successful profile write. Re-read
+      // both stores rather than guessing whether the selection changed.
+      void Promise.allSettled([get().fetchAccounts(), get().fetchCurrentAccount()]);
       throw error;
     }
     console.info('[Codex Switch][Store] switchCodexAccount finished', {

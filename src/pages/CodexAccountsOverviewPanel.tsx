@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { CodexProfileStatus } from '../components/CodexProfileStatus';
 import { createPortal } from "react-dom";
 import { Plus, RefreshCw, Download, Upload, Trash2, X, Globe, KeyRound, Power, Copy, Check, Play, Pause, RotateCw, CircleAlert, Info, Rows3, LayoutGrid, List, Search, ArrowDownWideNarrow, ArrowUp, ArrowDown, GripVertical, Clock, Tag, Star, Eye, EyeOff, BookOpen, FileText, ExternalLink, Pencil, FolderOpen, FolderPlus, ChevronRight, LogOut, Terminal, ChevronDown } from "lucide-react";
 import * as codexLocalAccessService from "../services/codexLocalAccessService";
@@ -385,8 +386,10 @@ export function CodexAccountsOverviewPanel(props: CodexAccountsViewProps) {
     validateOAuthBindingQuotaReserveField,
     viewMode,
   } = props;
+  const savedProfile = accounts.find((account) => account.id === overviewCurrentAccountId);
   return (
         <>
+          <CodexProfileStatus savedProfileLabel={savedProfile ? maskAccountText(resolvePresentation(savedProfile).displayName) : undefined} />
           {message && (
             <div
               className={`message-bar ${message.tone === "error" ? "error" : "success"}`}
@@ -2573,7 +2576,7 @@ export function CodexAccountsOverviewPanel(props: CodexAccountsViewProps) {
                                 </span>
                                 {isCurrent && (
                                   <span className="mini-tag current">
-                                    {t("codex.current", "当前")}
+                                    {t("codex.profileStatus.savedBadge")}
                                   </span>
                                 )}
                                 <span

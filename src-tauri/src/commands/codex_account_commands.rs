@@ -730,6 +730,41 @@ pub fn get_current_codex_account() -> Result<Option<CodexAccount>, String> {
     Ok(codex_account::get_current_account())
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CodexDesktopProcessStatus {
+    Open,
+    Closed,
+    Unknown,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CodexDesktopStatus {
+    pub status: CodexDesktopProcessStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+/// Reports process presence only. It does not establish the desktop's signed-in
+/// account or whether any task is active, and does not change its profile.
+#[tauri::command]
+pub async fn get_codex_desktop_status() -> CodexDesktopStatus {
+    match crate::modules::codex_restart_guard::desktop_is_running().await {
+        Ok(open) => CodexDesktopStatus {
+            status: if open {
+                CodexDesktopProcessStatus::Open
+            } else {
+                CodexDesktopProcessStatus::Closed
+            },
+            error: None,
+        },
+        Err(error) => CodexDesktopStatus {
+            status: CodexDesktopProcessStatus::Unknown,
+            error: Some(error),
+        },
+    }
+}
+
 #[tauri::command]
 pub fn get_codex_config_toml_path() -> Result<String, String> {
     let path = codex_account::get_codex_home().join("config.toml");

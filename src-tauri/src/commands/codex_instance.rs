@@ -3445,15 +3445,32 @@ async fn codex_start_instance_internal(
         );
         let launch_started = Instant::now();
         ensure_codex_instance_start_not_cancelled(&instance_id)?;
-        let pid = if skip_default_bind_account_injection {
-            modules::process::start_codex_default_fast_after_close(&injection_plan.args)?
+        let launch_result = if skip_default_bind_account_injection {
+            modules::process::start_codex_default_fast_after_close(&injection_plan.args)
         } else {
-            modules::process::start_codex_default(&injection_plan.args)?
+            modules::process::start_codex_default(&injection_plan.args)
         };
         if codex_instance_start_cancelled(&instance_id) {
-            let _ = modules::process::close_pid(pid, 5);
+            if let Ok(pid) = launch_result {
+                let _ = modules::process::close_pid(pid, 5);
+            }
             return Err("CODEX_START_CANCELLED".to_string());
         }
+        let pid = launch_result?;
+        let launched_pid = pid;
+        let confirmation = tauri::async_runtime::spawn_blocking(move || {
+            modules::process::confirm_codex_desktop_started(launched_pid, None)
+        })
+        .await
+        .map_err(|error| format!("Could not confirm Codex desktop startup: {error}"))
+        .and_then(|result| result);
+        if codex_instance_start_cancelled(&instance_id) {
+            if let Some(current_pid) = modules::process::resolve_codex_pid(Some(pid), None) {
+                let _ = modules::process::close_pid(current_pid, 5);
+            }
+            return Err("CODEX_START_CANCELLED".to_string());
+        }
+        let pid = confirmation?;
         modules::logger::log_info(&format!(
             "[Codex Start] default launch phase finished, pid={}, elapsed_ms={}, total_ms={}",
             pid,
@@ -3470,6 +3487,11 @@ async fn codex_start_instance_internal(
             default_bind_account_id.clone(),
         );
         let running = modules::process::is_pid_running(pid);
+        if !running {
+            let _ = modules::codex_instance::update_default_pid(None);
+            modules::codex_app_injection::stop_for_profile(&default_dir);
+            return Err("Codex desktop exited before startup could complete".to_string());
+        }
         modules::logger::log_info(&format!(
             "[Codex Start] default finalize phase finished: elapsed_ms={}, total_ms={}",
             finalize_started.elapsed().as_millis(),
@@ -3745,12 +3767,32 @@ async fn codex_start_instance_internal(
     );
     let launch_started = Instant::now();
     ensure_codex_instance_start_not_cancelled(&instance_id)?;
-    let pid =
-        modules::process::start_codex_with_args(&instance.user_data_dir, &injection_plan.args)?;
+    let launch_result =
+        modules::process::start_codex_with_args(&instance.user_data_dir, &injection_plan.args);
     if codex_instance_start_cancelled(&instance_id) {
-        let _ = modules::process::close_pid(pid, 5);
+        if let Ok(pid) = launch_result {
+            let _ = modules::process::close_pid(pid, 5);
+        }
         return Err("CODEX_START_CANCELLED".to_string());
     }
+    let pid = launch_result?;
+    let launched_pid = pid;
+    let profile_dir = instance.user_data_dir.clone();
+    let confirmation = tauri::async_runtime::spawn_blocking(move || {
+        modules::process::confirm_codex_desktop_started(launched_pid, Some(&profile_dir))
+    })
+    .await
+    .map_err(|error| format!("Could not confirm Codex desktop startup: {error}"))
+    .and_then(|result| result);
+    if codex_instance_start_cancelled(&instance_id) {
+        if let Some(current_pid) =
+            modules::process::resolve_codex_pid(Some(pid), Some(&instance.user_data_dir))
+        {
+            let _ = modules::process::close_pid(current_pid, 5);
+        }
+        return Err("CODEX_START_CANCELLED".to_string());
+    }
+    let pid = confirmation?;
     modules::logger::log_info(&format!(
         "[Codex Start] instance launch phase finished: instance_id={}, pid={}, elapsed_ms={}, total_ms={}",
         instance.id,
@@ -3768,6 +3810,11 @@ async fn codex_start_instance_internal(
         instance.bind_account_id.clone(),
     );
     let running = modules::process::is_pid_running(pid);
+    if !running {
+        let _ = modules::codex_instance::update_instance_pid(&instance.id, None);
+        modules::codex_app_injection::stop_for_profile(instance_dir);
+        return Err("Codex desktop exited before startup could complete".to_string());
+    }
     let initialized = is_profile_initialized(&updated.user_data_dir);
     modules::logger::log_info(&format!(
         "[Codex Start] instance finalize phase finished: instance_id={}, elapsed_ms={}, total_ms={}",

@@ -419,7 +419,7 @@ export function useCodexAccountsOverviewController(context: Pick<ReturnType<type
             : account.client_auth_status === "login_required"
               ? t("codex.switchAuth.apiOnlyBadge", "客户端需授权")
               : overviewCurrentAccountId === account.id
-                ? t("codex.current", "当前")
+                ? t("codex.profileStatus.savedBadge")
                 : undefined,
           statusTone: account.requires_reauth || account.client_auth_status === "login_required"
             ? "warning"

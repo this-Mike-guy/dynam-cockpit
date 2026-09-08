@@ -795,7 +795,7 @@ export function useCodexAccountsRenderers(context: Pick<ReturnType<typeof useCod
                 </span>
               )}
               {isCurrent && (
-                <span className="current-tag">{t("codex.current", "当前")}</span>
+                <span className="current-tag">{t("codex.profileStatus.savedBadge")}</span>
               )}
               {clientAuthRequired && (
                 <span
@@ -2186,7 +2186,7 @@ export function useCodexAccountsRenderers(context: Pick<ReturnType<typeof useCod
                   )}
                   {isCurrent && (
                     <span className="mini-tag current">
-                      {t("codex.current", "当前")}
+                      {t("codex.profileStatus.savedBadge")}
                     </span>
                   )}
                   {renderAccountSpeedSelect(account, true)}

@@ -2413,10 +2413,10 @@ pub fn start_codex_with_args(codex_home: &str, extra_args: &[String]) -> Result<
         }
         if let Some(child) = child {
             crate::modules::logger::log_warn(&format!(
-                "[Codex Start] Windows 实例启动后 15s 内未匹配到实例 PID，回退 spawn pid={}",
+                "[Codex Start] Windows instance launch was not confirmed within 15s; refusing raw spawn pid={}",
                 child.id()
             ));
-            Ok(child.id())
+            Err("Codex instance launch timed out: no desktop process matched the requested profile".to_string())
         } else {
             let error = codex_managed_store_launch_unsafe_error(
                 "WindowsApps direct launch denied",

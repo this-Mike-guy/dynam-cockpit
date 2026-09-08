@@ -1,3 +1,4 @@
+import { CodexLaunchFailure } from './CodexLaunchFailure';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -897,9 +898,10 @@ export function CodexInstanceLaunchProgressModal() {
           )}
           {!authFailure && (state.error || actionError) && (
             <div className="codex-switch-progress-error">
-              {actionError ||
-                windowsOperationError?.originalReason ||
-                state.error}
+              <CodexLaunchFailure error={actionError || windowsOperationError?.originalReason || state.error} onOpenSettings={() => {
+                setState(null);
+                window.dispatchEvent(new CustomEvent('app-request-navigate', { detail: 'settings' }));
+              }} />
             </div>
           )}
         </div>

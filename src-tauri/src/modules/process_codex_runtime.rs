@@ -9,6 +9,61 @@ pub fn start_codex_default_fast_after_close(extra_args: &[String]) -> Result<u32
     start_codex_default_internal(extra_args, true)
 }
 
+fn wait_for_observed_codex_desktop_pid(
+    probe: impl FnMut() -> Option<u32>,
+    timeout: Duration,
+    interval: Duration,
+) -> Option<u32> {
+    let started = Instant::now();
+    observe_codex_desktop_pid_until(probe, || started.elapsed(), timeout, interval)
+}
+
+fn observe_codex_desktop_pid_until(
+    mut probe: impl FnMut() -> Option<u32>,
+    mut elapsed: impl FnMut() -> Duration,
+    timeout: Duration,
+    interval: Duration,
+) -> Option<u32> {
+    let mut previous = None;
+    loop {
+        let within_discovery_window = elapsed() < timeout;
+        if !within_discovery_window && previous.is_none() {
+            return None;
+        }
+        let observed = probe();
+        // A launcher can exit immediately or hand off to another PID. Require
+        // the same recognized live desktop on consecutive observations.
+        if observed.is_some() && observed == previous {
+            return observed;
+        }
+        // A bounded OS probe can finish after our discovery window. Give a
+        // successful observation one stability check, rather than rejecting it
+        // solely because the first probe was slow. Do not extend discovery
+        // again if that last check loses or changes the candidate.
+        if !within_discovery_window {
+            return None;
+        }
+        previous = observed;
+        thread::sleep(interval);
+    }
+}
+
+/// Confirms desktop process presence for the requested profile, not login or
+/// task activity. Never accepts the raw launcher PID as fallback evidence.
+pub fn confirm_codex_desktop_started(
+    launcher_pid: u32,
+    codex_home: Option<&str>,
+) -> Result<u32, String> {
+    wait_for_observed_codex_desktop_pid(
+        || resolve_codex_pid(Some(launcher_pid), codex_home).filter(|pid| is_pid_running(*pid)),
+        Duration::from_secs(3),
+        Duration::from_millis(250),
+    )
+    .ok_or_else(|| {
+        "Codex desktop startup was not confirmed: no matching desktop process remained running. The account profile may already be prepared; check Codex before retrying.".to_string()
+    })
+}
+
 fn build_codex_app_launch_args(extra_args: &[String]) -> Vec<String> {
     extra_args
         .iter()
@@ -211,7 +266,14 @@ fn start_codex_default_internal(
             launch_path.to_string_lossy(),
             child.id()
         ));
-        return Ok(child.id());
+        return wait_for_codex_default_start_pid_fast(
+            launch_path.to_string_lossy().as_ref(),
+            &before_pids,
+            Duration::from_secs(15),
+        )
+        .ok_or_else(|| {
+            "Codex desktop launch timed out: the executable started but no matching desktop process was observed".to_string()
+        });
     }
 
     #[cfg(target_os = "linux")]

@@ -44,7 +44,7 @@ jobs:
       - name: Build and typecheck frontend
         run: npm run build
       - name: Verify English Codex interface
-        run: node --test tests/english-codex-translations.test.mjs
+        run: node --test tests/english-codex-translations.test.mjs src/utils/codexDesktopStatus.test.ts
       - name: Verify Windows quota and launcher regressions
         shell: pwsh
         run: |
@@ -72,7 +72,8 @@ jobs:
             'codex_current_quota_stack_tests',
             'codex_windows_launch_preflight_tests',
             'codex_path_migration_tests',
-            'codex_windows_app_server_cleanup_tests'
+            'codex_windows_app_server_cleanup_tests',
+            'codex_desktop_launch_confirmation_tests'
           )
           foreach ($filter in $filters) {
             $listed = @(& $testBinary $filter --list | Select-String ': test$')

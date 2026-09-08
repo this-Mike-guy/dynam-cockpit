@@ -863,7 +863,7 @@
       "title": "Starting Codex instance",
       "progress": "Launch progress",
       "conflictTitle": "Account is in use",
-      "completedTitle": "Instance started",
+      "completedTitle": "Launch request completed",
       "cancelledTitle": "Launch cancelled",
       "failedTitle": "Instance launch failed",
       "skipAndLaunch": "Skip and launch",
@@ -875,7 +875,7 @@
       "steps": {
         "checkInstance": "Check target instance",
         "checkAccount": "Check bound account",
-        "checkOccupancy": "Check account usage",
+        "checkOccupancy": "Check instance assignments",
         "stopPrevious": "Stop previous instance",
         "prepareCredentials": "Prepare credentials",
         "writeProfile": "Write instance profile",
@@ -885,8 +885,8 @@
         "checkingInstance": "Reading instance configuration...",
         "checkingAccount": "Checking the OAuth account and tokens...",
         "noOAuthAccount": "No OAuth account is bound; no usage check is needed",
-        "accountInUse": "This OAuth account is already used by a running instance",
-        "accountAvailable": "No other running instance is using this account",
+        "accountInUse": "This account is assigned to another instance",
+        "accountAvailable": "No conflicting account assignment found",
         "transferSkipped": "No account ownership transfer is needed",
         "stoppingOwners": "Safely stopping: {{owners}}",
         "stoppingPrevious": "Safely stopping the previous instance and recovering its latest credentials...",
@@ -2477,7 +2477,7 @@
       "modelRoutingEnabled": "Enabled"
     },
     "switch": "Switch",
-    "switched": "Switched to {{email}}",
+    "switched": "Saved profile updated to {{email}}. The signed-in Codex account and task activity are not verified.",
     "switchFailed": "Switch failed: {{error}}",
     "authError": {
       "badge": "Auth Issue",
@@ -2515,7 +2515,7 @@
       "apiOnlyBadge": "Sign-in Needed"
     },
     "switchProgress": {
-      "completed": "Switch complete",
+      "completed": "Profile saved",
       "needsAttention": "Action required",
       "steps": {
         "credentials": "Read account credentials",
@@ -2558,9 +2558,9 @@
         "writingCredentials": "Writing the target account login data...",
         "settingsSynced": "Account binding, speed, and related settings are synced",
         "syncingSettings": "Syncing account binding and related settings...",
-        "launchDisabled": "Automatic launch after switching is off; start it manually later",
-        "clientStartWarning": "Credentials switched, but the client did not start; retry later",
-        "clientStarted": "Codex client started",
+        "launchDisabled": "Automatic launch is off. Fully quit and reopen Codex to apply the saved profile.",
+        "clientStartWarning": "Profile saved, but Codex did not start. Restart Codex to apply the profile.",
+        "clientStarted": "Codex launch requested; signed-in account and task activity are not verified",
         "startingClient": "Starting the Codex client..."
       }
     },
@@ -4685,6 +4685,20 @@
       "launchSuccess": "Codex CLI started",
       "quickLaunch": "Quick launch CLI",
       "selectWorkingDir": "Select the Codex CLI working directory"
+    },
+    "profileStatus": {
+      "title": "Codex profile and desktop status",
+      "savedBadge": "Saved profile",
+      "noSavedProfile": "No account marked",
+      "desktopOpen": "Codex process detected",
+      "desktopClosed": "No Codex process detected",
+      "processUnknown": "Process status unknown",
+      "accountUnverified": "Signed-in account: not verified",
+      "tasksUnknown": "Task activity: unknown",
+      "applyHint": "Saved profile is your selection here. Finish tasks, fully quit and reopen Codex to apply it, then check the account in Codex.",
+      "appNotFound": "Could not find the Codex desktop app.",
+      "appPathHint": "Open Settings, find Codex App Path, and select the Codex executable. This error does not confirm whether the saved profile changed.",
+      "openSettings": "Open Settings"
     }
   },
   "codebuddy": {
